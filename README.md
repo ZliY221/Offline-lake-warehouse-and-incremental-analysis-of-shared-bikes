@@ -12,7 +12,7 @@
 - [x] 使用显式 Spark Schema 读取 NDJSON，不依赖自动推断业务类型。
 - [x] 将 Bronze 行程写为按 `ingestion_date` 分区的 Parquet。
 - [x] 使用动态分区覆盖实现同批次安全重跑，并保留未触及日期分区。
-- [ ] 实现 Silver 合法性校验、拒绝数据、去重与派生字段。
+- [x] 实现 Silver 合法性校验、最小披露拒绝数据、精确/冲突去重与派生字段。
 - [ ] 实现站点 SCD2 维度。
 - [ ] 实现 Gold 日指标、热门路线和留存分析。
 - [ ] 加入数据质量报告、增量回填与性能证据。
@@ -43,7 +43,8 @@ flowchart LR
 ```text
 bike-trip-lakehouse/
 ├─ .github/workflows/        持续集成
-├─ data/sample/              固定脱敏样例
+├─ data/sample/              固定脱敏正常样例
+├─ data/quality/             固定质量问题演示批次
 ├─ docs/                     需求、架构和学习材料
 ├─ scripts/                  环境探测、生成和测试脚本
 ├─ src/bike_lakehouse/       生成器、契约与 Spark Bronze 装载
@@ -91,17 +92,37 @@ python -m pip install -e .
 
 输出位于被 Git 忽略的 `build/lakehouse/bronze/trips/`，按 `ingestion_date=YYYY-MM-DD` 分区。脚本使用动态分区覆盖：重跑某日只替换该日分区，不删除其他日期。
 
+## Silver 质量与去重
+
+```powershell
+./scripts/build-silver.ps1
+```
+
+Silver 将完整重建三个数据集：
+
+- `trips_valid`：通过规则、去重后的行程，并派生业务日期和骑行分钟数；
+- `trips_rejected`：业务或结构失败记录，损坏原文只保留 SHA-256 指纹和字节数；
+- `trips_duplicates`：区分完全相同的重复投递与同 ID 不同内容的主键冲突。
+
+质量问题演示：
+
+```powershell
+./scripts/silver-quality-demo.ps1
+```
+
+固定 12 行输入会产生 1 条合法记录、8 条拒绝记录、1 条精确重复和 2 条冲突重复。
+
 ## 自动化验证
 
 ```powershell
 ./scripts/test-all.ps1
 ```
 
-当前测试覆盖确定性、契约、金额/时间边界、隐私字段、显式 Spark Schema、Parquet 类型、同分区幂等重跑和跨日期分区保留。
+当前测试覆盖确定性、契约、金额/时间边界、隐私字段、显式 Spark Schema、Parquet 类型、同分区幂等重跑、跨日期分区保留、8 类质量失败、精确/冲突重复、派生字段、空输出 Schema 和 Silver 完整重建幂等。
 
 ## 当前边界
 
 - Spark 当前只在单机 `local[2]` 模式运行，不能表述为生产集群经验。
 - Windows 原生 Spark 仅做过 DataFrame 聚合验证；涉及 Hadoop 文件系统的 Parquet 测试和构建统一在 WSL/Linux 执行，CI 也使用 Linux。
-- Bronze 只保证按显式 Schema 解析和可重复落盘；业务拒绝、去重、SCD2 和 Gold 指标尚未完成。
+- Bronze 与行程 Silver 已完成；站点 SCD2、Gold 指标、批次清单和性能证据尚未完成。
 - 没有脚本和原始报告前，不写吞吐、延迟或节省比例。
