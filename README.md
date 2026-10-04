@@ -18,8 +18,8 @@
 - [x] 为 Bronze 摄取加入确定性批次 ID、文件指纹和原子状态清单。
 - [x] 实现单日期预检、分区替换和 Silver/Gold 重建的受控回填。
 - [x] 实现跨层行数、SCD2 区间、Gold 汇总和路线排名质量报告。
+- [x] 完成固定输入、预热加三轮测量的本机端到端性能证据。
 - [ ] 实现留存分析。
-- [ ] 加入性能证据。
 
 ## 为什么单独建仓
 
@@ -159,6 +159,16 @@ Gold 先按行程业务日期分别关联起点、终点在当日有效的 SCD2 
 
 报告写入 `build/reports/data-quality.json`，检查 Bronze 行数能否由 Silver 合法、拒绝和重复数据完整对账，每个站点是否只有一个当前版本、SCD2 区间是否连续，Gold 聚合行程数是否等于合法 Silver 行程数，以及 Top 路线排名是否满足范围和唯一性约束。当前正式样例 5 项检查全部为 `PASS`。
 
+## 本机性能证据
+
+```powershell
+./scripts/run-benchmark.ps1
+```
+
+固定 10,000 行、2,567,025 字节 NDJSON，在 WSL2、Spark 4.2.0、JDK 17、Python 3.14.4、`local[2]`、约 7.35 GiB 可用内存环境中，复用单个 Spark 会话，先预热 1 轮再测量 3 轮。端到端完整执行 Bronze 覆盖、Silver 全量重建和 Gold 全量重建，中位耗时 15.961 秒，即 626.53 输入行/秒；Spark/JVM 启动和测试数据生成不计入。
+
+三轮端到端原始耗时为 16.483、15.961、15.749 秒；阶段中位数为 Bronze 1.845 秒、Silver 5.805 秒、Gold 8.312 秒。完整环境、输入 SHA-256、方法和逐轮结果见 [`evidence/benchmark-10000-local.json`](evidence/benchmark-10000-local.json)。这些数字只代表该本机基准，不外推为生产集群能力。
+
 ## 自动化验证
 
 ```powershell
@@ -171,5 +181,5 @@ Gold 先按行程业务日期分别关联起点、终点在当日有效的 SCD2 
 
 - Spark 当前只在单机 `local[2]` 模式运行，不能表述为生产集群经验。
 - Windows 原生 Spark 仅做过 DataFrame 聚合验证；涉及 Hadoop 文件系统的 Parquet 测试和构建统一在 WSL/Linux 执行，CI 也使用 Linux。
-- Bronze、批次清单、受控回填、行程 Silver、站点 SCD2、Gold 日指标、热门路线和跨层质量报告已完成；留存分析与性能证据尚未完成。
+- Bronze、批次清单、受控回填、行程 Silver、站点 SCD2、Gold 日指标、热门路线、跨层质量报告和性能证据已完成；留存分析尚未完成，且需要先引入合规的匿名骑行者键，当前不会用 `rider_type` 冒充用户留存。
 - 没有脚本和原始报告前，不写吞吐、延迟或节省比例。

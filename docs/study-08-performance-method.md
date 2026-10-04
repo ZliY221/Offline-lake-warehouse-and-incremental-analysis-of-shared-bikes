@@ -26,4 +26,4 @@ Bronze 动态分区覆盖
 ./scripts/run-benchmark.ps1
 ```
 
-默认使用固定种子生成 10,000 行 NDJSON。输出保存在被 Git 忽略的 `build/reports/`；需要形成作品集证据时，再将核验后的原始报告复制到版本控制目录，并在 README 中引用具体环境和结果。
+默认使用固定种子生成 10,000 行 NDJSON。运行时输出保存在被 Git 忽略的 `build/reports/`；本次核验后的原始报告已保存为 `evidence/benchmark-10000-local.json`，README 引用了具体环境、范围和结果。
