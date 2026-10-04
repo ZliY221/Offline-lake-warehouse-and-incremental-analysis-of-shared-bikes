@@ -15,6 +15,7 @@
 - [x] 实现 Silver 合法性校验、最小披露拒绝数据、精确/冲突去重与派生字段。
 - [x] 实现站点快照校验、冲突隔离与 SCD2 历史维度。
 - [x] 实现 Gold 日指标、SCD2 时态关联和分区 Top 路线。
+- [x] 为 Bronze 摄取加入确定性批次 ID、文件指纹和原子状态清单。
 - [ ] 实现留存分析。
 - [ ] 加入数据质量报告、增量回填与性能证据。
 
@@ -93,6 +94,8 @@ python -m pip install -e .
 
 输出位于被 Git 忽略的 `build/lakehouse/bronze/trips/`，按 `ingestion_date=YYYY-MM-DD` 分区。脚本使用动态分区覆盖：重跑某日只替换该日分区，不删除其他日期。
 
+每次摄取还会在 `build/lakehouse/control/bronze_batches/` 写入原子 JSON 批次清单。批次 ID 由摄取日期与来源文件 SHA-256 确定；同批重跑更新同一记录并增加 `attempt_count`，不会制造重复清单。记录包含输入字节数、输入/损坏/输出行数、UTC 起止时间，以及 `RUNNING`、`SUCCEEDED` 或 `FAILED` 状态。
+
 ## Silver 质量与去重
 
 ```powershell
@@ -142,11 +145,11 @@ Gold 先按行程业务日期分别关联起点、终点在当日有效的 SCD2 
 ./scripts/test-all.ps1
 ```
 
-当前测试覆盖确定性、契约、金额/时间边界、隐私字段、显式 Spark Schema、Parquet 类型、同分区幂等重跑、跨日期分区保留、8 类质量失败、精确/冲突重复、派生字段、空输出 Schema、Silver 完整重建幂等、站点 SCD2 连续有效期与冲突处理，以及 Gold 时态关联、手工指标核对、路线排名和维度缺失保护。
+当前测试覆盖确定性、契约、金额/时间边界、隐私字段、显式 Spark Schema、Parquet 类型、同分区幂等重跑、跨日期分区保留、确定性批次清单、状态与失败记录、8 类质量失败、精确/冲突重复、派生字段、空输出 Schema、Silver 完整重建幂等、站点 SCD2 连续有效期与冲突处理，以及 Gold 时态关联、手工指标核对、路线排名和维度缺失保护。
 
 ## 当前边界
 
 - Spark 当前只在单机 `local[2]` 模式运行，不能表述为生产集群经验。
 - Windows 原生 Spark 仅做过 DataFrame 聚合验证；涉及 Hadoop 文件系统的 Parquet 测试和构建统一在 WSL/Linux 执行，CI 也使用 Linux。
-- Bronze、行程 Silver、站点 SCD2、Gold 日指标与热门路线已完成；留存分析、批次清单和性能证据尚未完成。
+- Bronze、批次清单、行程 Silver、站点 SCD2、Gold 日指标与热门路线已完成；留存分析、受控回填、质量汇总和性能证据尚未完成。
 - 没有脚本和原始报告前，不写吞吐、延迟或节省比例。
