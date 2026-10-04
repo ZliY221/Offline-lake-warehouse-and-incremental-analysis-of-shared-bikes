@@ -198,6 +198,37 @@ class SilverBuildTests(unittest.TestCase):
             self.assertEqual(self.spark.read.parquet(str(duplicates)).count(), 0)
             self.assertIn("duplicate_kind", self.spark.read.parquet(str(duplicates)).columns)
 
+    def test_invalid_anonymous_rider_key_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "invalid-rider.ndjson"
+            bronze = root / "bronze"
+            row = generate_trips(1)[0]
+            row["rider_key"] = "person@example.com"
+            source.write_text(
+                json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            ingest_trip_bronze(
+                self.spark,
+                input_path=source,
+                output_path=bronze,
+                ingestion_date=date(2026, 10, 1),
+            )
+            result = build_trip_silver(
+                self.spark,
+                bronze_path=bronze,
+                valid_path=root / "valid",
+                rejected_path=root / "rejected",
+                duplicate_path=root / "duplicates",
+            )
+            self.assertEqual(result.valid_rows, 0)
+            self.assertEqual(result.rejected_rows, 1)
+            errors = self.spark.read.parquet(str(root / "rejected")).first()[
+                "validation_errors"
+            ]
+            self.assertIn("INVALID_RIDER_KEY", errors)
+
 
 if __name__ == "__main__":
     unittest.main()

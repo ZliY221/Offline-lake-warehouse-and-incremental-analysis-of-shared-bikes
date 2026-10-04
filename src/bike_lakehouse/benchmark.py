@@ -109,6 +109,7 @@ def run_benchmark(
     silver_duplicates = work_path / "lakehouse" / "silver" / "trips_duplicates"
     gold_daily = work_path / "lakehouse" / "gold" / "daily_metrics"
     gold_routes = work_path / "lakehouse" / "gold" / "popular_routes"
+    gold_retention = work_path / "lakehouse" / "gold" / "cohort_retention"
 
     raw_rounds: list[dict[str, Any]] = []
     total_rounds = warmup_rounds + measured_rounds
@@ -140,6 +141,7 @@ def run_benchmark(
             station_dimension_path=dimension_path,
             daily_metrics_path=gold_daily,
             popular_routes_path=gold_routes,
+            cohort_retention_path=gold_retention,
         )
         gold_seconds = perf_counter() - stage_started
         total_seconds = perf_counter() - total_started
@@ -156,6 +158,7 @@ def run_benchmark(
                     "silver_valid_rows": silver.valid_rows,
                     "gold_daily_metric_rows": gold.daily_metric_rows,
                     "gold_popular_route_rows": gold.popular_route_rows,
+                    "gold_cohort_retention_rows": gold.cohort_retention_rows,
                 }
             )
 

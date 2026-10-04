@@ -83,6 +83,7 @@ class DateBackfillTests(unittest.TestCase):
                 station_dimension_path=dimension,
                 gold_daily_metrics_path=root / "gold-daily",
                 gold_popular_routes_path=root / "gold-routes",
+                gold_cohort_retention_path=root / "gold-retention",
                 backfill_manifest_path=root / "backfill-manifest",
             )
 
@@ -113,6 +114,7 @@ class DateBackfillTests(unittest.TestCase):
                 station_rejected_path=station_rejected,
                 gold_daily_metrics_path=root / "gold-daily",
                 gold_popular_routes_path=root / "gold-routes",
+                gold_cohort_retention_path=root / "gold-retention",
                 bronze_manifest_path=bronze_manifest,
                 backfill_manifest_path=root / "backfill-manifest",
                 output_path=root / "quality-report.json",
@@ -146,6 +148,7 @@ class DateBackfillTests(unittest.TestCase):
                     station_dimension_path=root / "dimension",
                     gold_daily_metrics_path=root / "gold-daily",
                     gold_popular_routes_path=root / "gold-routes",
+                    gold_cohort_retention_path=root / "gold-retention",
                     backfill_manifest_path=root / "backfill-manifest",
                 )
             report_path = next((root / "backfill-manifest").glob("*.json"))

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
+import re
 from typing import Any
 
 from .generator import BIKE_TYPES, RIDER_TYPES, STATIONS
@@ -11,6 +12,7 @@ from .generator import BIKE_TYPES, RIDER_TYPES, STATIONS
 
 TRIP_KEYS = {
     "trip_id",
+    "rider_key",
     "started_at",
     "ended_at",
     "start_station_id",
@@ -49,6 +51,9 @@ def validate_trip(record: Any) -> list[str]:
         errors.append("trip fields do not match the v1 contract")
     if not isinstance(record.get("trip_id"), str) or not record["trip_id"].startswith("trip_"):
         errors.append("trip_id must start with trip_")
+    rider_key = record.get("rider_key")
+    if not isinstance(rider_key, str) or re.fullmatch(r"rider_[0-9a-f]{16}", rider_key) is None:
+        errors.append("rider_key must be a synthetic 16-hex identifier")
     started_at = _timestamp(record.get("started_at"), "started_at", errors)
     ended_at = _timestamp(record.get("ended_at"), "ended_at", errors)
     if started_at and ended_at and ended_at <= started_at:

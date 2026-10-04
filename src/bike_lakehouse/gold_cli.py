@@ -16,6 +16,7 @@ def main() -> None:
     parser.add_argument("--station-dimension", type=Path, required=True)
     parser.add_argument("--daily-metrics", type=Path, required=True)
     parser.add_argument("--popular-routes", type=Path, required=True)
+    parser.add_argument("--cohort-retention", type=Path, required=True)
     parser.add_argument("--route-limit", type=int, default=3)
     args = parser.parse_args()
     spark = create_local_spark("bike-trip-gold", Path("build/spark-warehouse"))
@@ -26,6 +27,7 @@ def main() -> None:
             station_dimension_path=args.station_dimension,
             daily_metrics_path=args.daily_metrics,
             popular_routes_path=args.popular_routes,
+            cohort_retention_path=args.cohort_retention,
             route_limit=args.route_limit,
         )
         print(json.dumps(result.to_dict(), ensure_ascii=False, sort_keys=True))

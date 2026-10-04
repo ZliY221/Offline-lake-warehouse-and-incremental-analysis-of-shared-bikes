@@ -47,6 +47,7 @@ def build_quality_report(
     station_rejected_path: Path,
     gold_daily_metrics_path: Path,
     gold_popular_routes_path: Path,
+    gold_cohort_retention_path: Path,
     bronze_manifest_path: Path,
     backfill_manifest_path: Path,
     output_path: Path,
@@ -75,6 +76,9 @@ def build_quality_report(
     routes = spark.read.parquet(
         str(_require_directory(gold_popular_routes_path, "Gold popular routes"))
     )
+    retention = spark.read.parquet(
+        str(_require_directory(gold_cohort_retention_path, "Gold cohort retention"))
+    )
 
     counts = {
         "bronze_rows": bronze.count(),
@@ -85,6 +89,7 @@ def build_quality_report(
         "station_rejected_rows": station_rejected.count(),
         "gold_daily_metric_rows": daily.count(),
         "gold_popular_route_rows": routes.count(),
+        "gold_cohort_retention_rows": retention.count(),
     }
     bronze_partitions = {
         row["ingestion_date"].isoformat(): row["count"]
@@ -142,6 +147,19 @@ def build_quality_report(
         .where(F.col("count") > 1)
         .count()
     )
+    retention_violations = retention.where(
+        (F.col("days_since_cohort") < 0)
+        | (F.col("retained_riders") > F.col("cohort_size"))
+        | (F.col("retention_rate") < F.lit(0))
+        | (F.col("retention_rate") > F.lit(1))
+        | (
+            (F.col("days_since_cohort") == 0)
+            & (
+                (F.col("retained_riders") != F.col("cohort_size"))
+                | (F.col("retention_rate") != F.lit(1))
+            )
+        )
+    ).count()
     checks = [
         _check(
             "silver_row_reconciliation",
@@ -171,6 +189,11 @@ def build_quality_report(
             invalid_rank_count=invalid_route_ranks,
             duplicate_rank_count=duplicate_route_ranks,
             configured_route_limit=route_limit,
+        ),
+        _check(
+            "cohort_retention_contract",
+            retention_violations == 0,
+            violation_count=retention_violations,
         ),
     ]
     manifests = _manifest_summary(bronze_manifest_path, backfill_manifest_path)

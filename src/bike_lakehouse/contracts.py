@@ -15,6 +15,7 @@ def trip_source_schema():
     return StructType(
         [
             StructField("trip_id", StringType(), True),
+            StructField("rider_key", StringType(), True),
             StructField("started_at", TimestampType(), True),
             StructField("ended_at", TimestampType(), True),
             StructField("start_station_id", StringType(), True),
