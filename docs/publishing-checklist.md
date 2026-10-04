@@ -14,6 +14,7 @@
 
 ```powershell
 git status --short
+python scripts/audit-publication.py
 ./scripts/run-portfolio-demo.ps1
 git log --oneline -10
 ```
@@ -21,10 +22,15 @@ git log --oneline -10
 必须满足：
 
 - `git status --short` 无输出；
+- 发布审计不存在高置信密钥或超过 20 MiB 的跟踪文件；`PASS_WITH_REVIEW` 项逐条确认是合成测试内容；
 - 一键演示最后输出 `"status": "PASS"`、`"automated_tests": "PASS"`；
 - 质量检查数为 6，正式样例行数与 README 一致；
 - `evidence/benchmark-10000-local.json` 能被 JSON 解析；
 - 仓库内没有简历 PDF、证书原图、学籍验证码、手机号、邮箱密钥或 `.env`。
+
+## 当前审计结果
+
+2026 年 10 月 4 日已实际运行发布审计：没有高置信密钥、私钥、本机用户路径或超过 5 MiB 的 Git 跟踪文件。唯一人工复核项是 `tests/test_silver.py` 中的合成邮箱字符串，它用于验证非法匿名骑行者键会被拒绝，不是真实联系方式。
 
 ## 需要本人决定
 
