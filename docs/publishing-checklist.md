@@ -1,14 +1,15 @@
 # 远程仓库发布清单
 
-当前本地仓库已完成代码、测试、质量报告、基准和面试材料，但尚未配置 GitHub/Gitee 远程地址。以下清单用于首次公开发布，避免误传个人信息或声称未经验证的状态。
+当前仓库已于 2026 年 10 月 4 日公开发布到 GitHub，代码、测试、质量报告、基准和面试材料均已同步。以下清单记录已完成的远程证据和仍需人工决定的发布事项。
 
 ## 推荐仓库信息
 
-- 仓库名：`bike-trip-lakehouse`
+- 远程仓库：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes>
+- 仓库名：`Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes`
 - 简介：`Reproducible PySpark batch lakehouse with SCD2, data quality, backfill, cohort retention and benchmark evidence.`
 - 建议 Topics：`pyspark`、`data-engineering`、`data-warehouse`、`parquet`、`scd2`、`data-quality`、`cohort-analysis`
 - 默认分支：`main`
-- 可见性：准备求职作品集时使用 Public；发布前再次检查个人信息。
+- 可见性：Public
 
 ## 发布前本地验收
 
@@ -32,23 +33,22 @@ git log --oneline -10
 
 2026 年 10 月 4 日已实际运行发布审计：没有高置信密钥、私钥、本机用户路径或超过 5 MiB 的 Git 跟踪文件。唯一人工复核项是 `tests/test_silver.py` 中的合成邮箱字符串，它用于验证非法匿名骑行者键会被拒绝，不是真实联系方式。
 
-## 需要本人决定
+## 仍需本人决定
 
-- GitHub 还是 Gitee，以及账号名；
-- 仓库是否立即公开；
 - 采用哪一种开源许可证。未确认前不自动添加许可证；
 - 是否同时发布英文 README。当前中文 README 更适合国内实习投递。
 
-## 创建远程后执行
+## 后续推送与远程验证
 
-将占位地址替换为本人创建的真实仓库地址：
+`origin` 已指向上述 GitHub 仓库，后续提交使用：
 
 ```powershell
-git remote add origin <REMOTE_REPOSITORY_URL>
-git push -u origin main
+git remote -v
+git status --short
+git push origin main
 ```
 
-不要把占位地址直接执行。推送后检查：
+推送后检查：
 
 1. GitHub Actions 的 Python/Spark 测试 Job 成功；
 2. README Mermaid 架构图可正常渲染；
@@ -70,9 +70,10 @@ git push -u origin main
 
 ## 发布后的验证证据
 
-记录以下内容，之后才能在简历或面试中说“公开仓库和远程 CI 已完成”：
+已核验：
 
-- 远程仓库 URL；
-- 首次成功 CI 的运行 URL 与提交 SHA；
-- 发布日期；
+- 远程仓库 URL：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes>
+- 首次成功 CI：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/runs/37176098699>
+- 首次成功提交：`548fdf9dd0f57fe8d3b390887407140170bcb64b`
+- 发布与首次成功日期：2026 年 10 月 4 日
 - 若 CI 与本机结果不同，记录原因和修复提交。
