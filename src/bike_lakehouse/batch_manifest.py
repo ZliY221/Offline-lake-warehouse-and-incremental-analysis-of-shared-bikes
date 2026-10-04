@@ -67,7 +67,7 @@ class BatchManifest:
         }
         _atomic_write(self.path, self.payload)
 
-    def complete(self, **metrics: int) -> None:
+    def complete(self, **metrics: Any) -> None:
         self.payload.update(metrics)
         self.payload.update(
             status="SUCCEEDED",
