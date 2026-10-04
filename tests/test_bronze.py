@@ -39,6 +39,7 @@ class BronzeIngestionTests(unittest.TestCase):
             root = Path(directory)
             source = root / "trips.ndjson"
             output = root / "bronze"
+            manifest = root / "manifest"
             write_events(source, generate_trips(5))
 
             result = ingest_trip_bronze(
@@ -46,11 +47,22 @@ class BronzeIngestionTests(unittest.TestCase):
                 input_path=source,
                 output_path=output,
                 ingestion_date=date(2026, 10, 1),
+                manifest_path=manifest,
             )
 
             self.assertEqual(result.input_rows, 5)
             self.assertEqual(result.output_rows_in_partition, 5)
             self.assertEqual(result.corrupt_rows, 0)
+            self.assertEqual(len(result.source_sha256), 64)
+            manifest_files = list(manifest.glob("*.json"))
+            self.assertEqual(len(manifest_files), 1)
+            manifest_record = json.loads(manifest_files[0].read_text(encoding="utf-8"))
+            self.assertEqual(manifest_record["batch_id"], result.batch_id)
+            self.assertEqual(manifest_record["status"], "SUCCEEDED")
+            self.assertEqual(manifest_record["attempt_count"], 1)
+            self.assertEqual(manifest_record["input_rows"], 5)
+            self.assertEqual(manifest_record["output_rows_in_partition"], 5)
+            self.assertEqual(manifest_record["source_sha256"], result.source_sha256)
             dataframe = self.spark.read.parquet(str(output))
             self.assertEqual(dataframe.schema["distance_km"].dataType.simpleString(), "decimal(8,2)")
             self.assertEqual(dataframe.schema["started_at"].dataType.simpleString(), "timestamp")
@@ -63,6 +75,7 @@ class BronzeIngestionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             output = root / "bronze"
+            manifest = root / "manifest"
             day_one = root / "day-one.ndjson"
             day_two = root / "day-two.ndjson"
             write_events(day_one, generate_trips(5, seed=2027))
@@ -79,18 +92,21 @@ class BronzeIngestionTests(unittest.TestCase):
                 input_path=day_one,
                 output_path=output,
                 ingestion_date=date(2026, 10, 1),
+                manifest_path=manifest,
             )
             ingest_trip_bronze(
                 self.spark,
                 input_path=day_two,
                 output_path=output,
                 ingestion_date=date(2026, 10, 2),
+                manifest_path=manifest,
             )
             ingest_trip_bronze(
                 self.spark,
                 input_path=day_one,
                 output_path=output,
                 ingestion_date=date(2026, 10, 1),
+                manifest_path=manifest,
             )
 
             counts = {
@@ -102,6 +118,16 @@ class BronzeIngestionTests(unittest.TestCase):
                 .collect()
             }
             self.assertEqual(counts, {"2026-10-01": 5, "2026-10-02": 4})
+            manifest_records = [
+                json.loads(path.read_text(encoding="utf-8"))
+                for path in sorted(manifest.glob("*.json"))
+            ]
+            self.assertEqual(len(manifest_records), 2)
+            attempts_by_date = {
+                record["ingestion_date"]: record["attempt_count"]
+                for record in manifest_records
+            }
+            self.assertEqual(attempts_by_date, {"2026-10-01": 2, "2026-10-02": 1})
 
 
 if __name__ == "__main__":

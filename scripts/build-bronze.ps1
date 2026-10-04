@@ -2,7 +2,8 @@
 param(
     [string]$InputPath = "data/sample/trips.ndjson",
     [string]$OutputPath = "build/lakehouse/bronze/trips",
-    [string]$IngestionDate = "2026-10-01"
+    [string]$IngestionDate = "2026-10-01",
+    [string]$ManifestPath = "build/lakehouse/control/bronze_batches"
 )
 
 $ErrorActionPreference = "Stop"
@@ -17,5 +18,6 @@ $distro = Get-WslDistroName
 & wsl.exe -d $distro -- bash "$wslRepoRoot/scripts/wsl/run-bronze.sh" `
     --input $InputPath `
     --output $OutputPath `
-    --ingestion-date $IngestionDate
+    --ingestion-date $IngestionDate `
+    --manifest $ManifestPath
 if ($LASTEXITCODE -ne 0) { throw "Bronze ingestion failed in WSL." }
