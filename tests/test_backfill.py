@@ -11,6 +11,7 @@ from pyspark.sql import functions as F
 from bike_lakehouse.backfill import run_date_backfill
 from bike_lakehouse.bronze import ingest_trip_bronze
 from bike_lakehouse.generator import generate_station_snapshot, generate_trips
+from bike_lakehouse.quality_report import build_quality_report
 from bike_lakehouse.spark import create_local_spark
 from bike_lakehouse.station_dimension import build_station_dimension
 
@@ -55,11 +56,12 @@ class DateBackfillTests(unittest.TestCase):
             bronze = root / "bronze"
             bronze_manifest = root / "bronze-manifest"
             dimension = root / "dimension"
+            station_rejected = root / "station-rejected"
             build_station_dimension(
                 self.spark,
                 input_paths=[stations],
                 dimension_path=dimension,
-                rejected_path=root / "station-rejected",
+                rejected_path=station_rejected,
             )
             ingest_trip_bronze(
                 self.spark,
@@ -101,6 +103,24 @@ class DateBackfillTests(unittest.TestCase):
             self.assertEqual(report["affected_bronze_partitions"], ["2026-10-01"])
             self.assertEqual(report["silver_rebuild_scope"], "FULL_DATASET")
             self.assertEqual(report["gold_result"]["input_trip_rows"], 7)
+            quality = build_quality_report(
+                self.spark,
+                bronze_path=bronze,
+                silver_valid_path=root / "silver-valid",
+                silver_rejected_path=root / "silver-rejected",
+                silver_duplicate_path=root / "silver-duplicates",
+                station_dimension_path=dimension,
+                station_rejected_path=station_rejected,
+                gold_daily_metrics_path=root / "gold-daily",
+                gold_popular_routes_path=root / "gold-routes",
+                bronze_manifest_path=bronze_manifest,
+                backfill_manifest_path=root / "backfill-manifest",
+                output_path=root / "quality-report.json",
+            )
+            self.assertEqual(quality["overall_status"], "PASS")
+            self.assertTrue(all(check["status"] == "PASS" for check in quality["checks"]))
+            self.assertEqual(quality["dataset_counts"]["bronze_rows"], 7)
+            self.assertEqual(quality["dataset_counts"]["silver_valid_rows"], 7)
 
     def test_source_date_mismatch_is_rejected_and_recorded(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
