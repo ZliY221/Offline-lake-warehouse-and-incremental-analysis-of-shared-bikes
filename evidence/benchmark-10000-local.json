@@ -1,6 +1,6 @@
 {
   "environment": {
-    "git_commit": "6bc0a2b7e6dd5fded52d7e1225afded56ae47c28",
+    "git_commit": "1b6fb234163a670dcb17a296a26411e8a8c58351",
     "java_version": "17.0.20.1",
     "logical_cpu_count": 16,
     "memory_bytes": 7895412736,
@@ -9,13 +9,13 @@
     "spark_master": "local[2]",
     "spark_version": "4.2.0"
   },
-  "generated_at_utc": "2026-10-04T02:55:37.697Z",
+  "generated_at_utc": "2026-10-04T03:17:41.421Z",
   "input": {
     "batch_date": "2026-10-01",
-    "bytes": 2567025,
+    "bytes": 2957025,
     "rows": 10000,
     "seed": 2027,
-    "sha256": "60820fc2f8e1e6f066eeb1aa243652cbc638d185c74940e3d601ed63f460e4e8"
+    "sha256": "02eceb51546d844cd7b1593986866894dfec71c6d0587aa1a188ca199369b7ab"
   },
   "method": {
     "dataset": "one deterministic NDJSON file reused in every round",
@@ -28,43 +28,46 @@
   "raw_rounds": [
     {
       "bronze_partition_rows": 10000,
-      "bronze_seconds": 1.848,
+      "bronze_seconds": 1.958,
+      "gold_cohort_retention_rows": 45,
       "gold_daily_metric_rows": 108,
       "gold_popular_route_rows": 81,
-      "gold_seconds": 8.542,
+      "gold_seconds": 13.628,
       "round": 1,
-      "silver_seconds": 6.093,
+      "silver_seconds": 6.196,
       "silver_valid_rows": 10000,
-      "total_seconds": 16.483
+      "total_seconds": 21.782
     },
     {
       "bronze_partition_rows": 10000,
-      "bronze_seconds": 1.845,
+      "bronze_seconds": 1.883,
+      "gold_cohort_retention_rows": 45,
       "gold_daily_metric_rows": 108,
       "gold_popular_route_rows": 81,
-      "gold_seconds": 8.312,
+      "gold_seconds": 12.182,
       "round": 2,
-      "silver_seconds": 5.805,
+      "silver_seconds": 5.931,
       "silver_valid_rows": 10000,
-      "total_seconds": 15.961
+      "total_seconds": 19.995
     },
     {
       "bronze_partition_rows": 10000,
-      "bronze_seconds": 1.783,
+      "bronze_seconds": 1.84,
+      "gold_cohort_retention_rows": 45,
       "gold_daily_metric_rows": 108,
       "gold_popular_route_rows": 81,
-      "gold_seconds": 8.312,
+      "gold_seconds": 12.508,
       "round": 3,
-      "silver_seconds": 5.654,
+      "silver_seconds": 5.559,
       "silver_valid_rows": 10000,
-      "total_seconds": 15.749
+      "total_seconds": 19.906
     }
   ],
   "summary": {
-    "median_bronze_seconds": 1.845,
-    "median_end_to_end_input_rows_per_second": 626.53,
-    "median_gold_seconds": 8.312,
-    "median_silver_seconds": 5.805,
-    "median_total_seconds": 15.961
+    "median_bronze_seconds": 1.883,
+    "median_end_to_end_input_rows_per_second": 500.13,
+    "median_gold_seconds": 12.508,
+    "median_silver_seconds": 5.931,
+    "median_total_seconds": 19.995
   }
 }
