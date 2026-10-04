@@ -20,6 +20,7 @@ def main() -> None:
     parser.add_argument("--station-rejected", type=Path, required=True)
     parser.add_argument("--gold-daily-metrics", type=Path, required=True)
     parser.add_argument("--gold-popular-routes", type=Path, required=True)
+    parser.add_argument("--gold-cohort-retention", type=Path, required=True)
     parser.add_argument("--bronze-manifest", type=Path, required=True)
     parser.add_argument("--backfill-manifest", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
@@ -37,6 +38,7 @@ def main() -> None:
             station_rejected_path=args.station_rejected,
             gold_daily_metrics_path=args.gold_daily_metrics,
             gold_popular_routes_path=args.gold_popular_routes,
+            gold_cohort_retention_path=args.gold_cohort_retention,
             bronze_manifest_path=args.bronze_manifest,
             backfill_manifest_path=args.backfill_manifest,
             output_path=args.output,

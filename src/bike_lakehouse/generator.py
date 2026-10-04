@@ -38,7 +38,14 @@ def generate_trips(
     if base_time.tzinfo is None:
         raise ValueError("start_time must include timezone information")
     rng = random.Random(seed)
+    rider_rng = random.Random(seed ^ 0x5A17)
     namespace = uuid.uuid5(uuid.NAMESPACE_URL, f"bike-trip-lakehouse:{seed}")
+    rider_namespace = uuid.uuid5(namespace, "synthetic-riders")
+    rider_pool_size = max(1, count // 5)
+    rider_keys = [
+        f"rider_{uuid.uuid5(rider_namespace, str(index)).hex[:16]}"
+        for index in range(rider_pool_size)
+    ]
     station_ids = [station[0] for station in STATIONS]
     trips: list[dict[str, object]] = []
     for index in range(count):
@@ -51,6 +58,7 @@ def generate_trips(
         trips.append(
             {
                 "trip_id": f"trip_{trip_uuid.hex}",
+                "rider_key": rider_rng.choice(rider_keys),
                 "started_at": _utc_text(started_at),
                 "ended_at": _utc_text(ended_at),
                 "start_station_id": start_station_id,

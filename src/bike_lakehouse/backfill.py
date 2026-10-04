@@ -24,6 +24,7 @@ class BackfillResult:
     silver_duplicate_rows: int
     gold_daily_metric_rows: int
     gold_popular_route_rows: int
+    gold_cohort_retention_rows: int
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -66,6 +67,7 @@ def run_date_backfill(
     station_dimension_path: Path,
     gold_daily_metrics_path: Path,
     gold_popular_routes_path: Path,
+    gold_cohort_retention_path: Path,
     backfill_manifest_path: Path,
 ) -> BackfillResult:
     """Replace one Bronze partition, then fully rebuild dependent Silver and Gold."""
@@ -110,6 +112,7 @@ def run_date_backfill(
             station_dimension_path=station_dimension_path,
             daily_metrics_path=gold_daily_metrics_path,
             popular_routes_path=gold_popular_routes_path,
+            cohort_retention_path=gold_cohort_retention_path,
         )
         result = BackfillResult(
             backfill_id=backfill_id,
@@ -120,6 +123,7 @@ def run_date_backfill(
             silver_duplicate_rows=silver.duplicate_rows,
             gold_daily_metric_rows=gold.daily_metric_rows,
             gold_popular_route_rows=gold.popular_route_rows,
+            gold_cohort_retention_rows=gold.cohort_retention_rows,
         )
         manifest.complete(
             input_rows=bronze.input_rows,

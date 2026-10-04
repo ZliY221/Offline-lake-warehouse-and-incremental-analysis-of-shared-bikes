@@ -4,6 +4,7 @@ param(
     [string]$StationDimensionPath = "build/lakehouse/dim/stations",
     [string]$DailyMetricsPath = "build/lakehouse/gold/daily_metrics",
     [string]$PopularRoutesPath = "build/lakehouse/gold/popular_routes",
+    [string]$CohortRetentionPath = "build/lakehouse/gold/cohort_retention",
     [int]$RouteLimit = 3
 )
 
@@ -21,5 +22,6 @@ $distro = Get-WslDistroName
     --station-dimension $StationDimensionPath `
     --daily-metrics $DailyMetricsPath `
     --popular-routes $PopularRoutesPath `
+    --cohort-retention $CohortRetentionPath `
     --route-limit $RouteLimit
 if ($LASTEXITCODE -ne 0) { throw "Gold analytics build failed in WSL." }

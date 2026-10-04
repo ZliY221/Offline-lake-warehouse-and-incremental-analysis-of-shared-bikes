@@ -21,6 +21,7 @@ $distro = Get-WslDistroName
     --station-rejected build/lakehouse/dim/stations_rejected `
     --gold-daily-metrics build/lakehouse/gold/daily_metrics `
     --gold-popular-routes build/lakehouse/gold/popular_routes `
+    --gold-cohort-retention build/lakehouse/gold/cohort_retention `
     --bronze-manifest build/lakehouse/control/bronze_batches `
     --backfill-manifest build/lakehouse/control/date_backfills `
     --output $OutputPath

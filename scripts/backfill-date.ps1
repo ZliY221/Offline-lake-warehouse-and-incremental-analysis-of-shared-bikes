@@ -12,6 +12,7 @@ param(
     [string]$StationDimensionPath = "build/lakehouse/dim/stations",
     [string]$GoldDailyMetricsPath = "build/lakehouse/gold/daily_metrics",
     [string]$GoldPopularRoutesPath = "build/lakehouse/gold/popular_routes",
+    [string]$GoldCohortRetentionPath = "build/lakehouse/gold/cohort_retention",
     [string]$BackfillManifestPath = "build/lakehouse/control/date_backfills"
 )
 
@@ -35,5 +36,6 @@ $distro = Get-WslDistroName
     --station-dimension $StationDimensionPath `
     --gold-daily-metrics $GoldDailyMetricsPath `
     --gold-popular-routes $GoldPopularRoutesPath `
+    --gold-cohort-retention $GoldCohortRetentionPath `
     --backfill-manifest $BackfillManifestPath
 if ($LASTEXITCODE -ne 0) { throw "Date backfill failed in WSL." }

@@ -13,6 +13,7 @@ class GoldBuildResult:
     enriched_trip_rows: int
     daily_metric_rows: int
     popular_route_rows: int
+    cohort_retention_rows: int
 
     def to_dict(self) -> dict[str, int]:
         return asdict(self)
@@ -25,10 +26,15 @@ def _require_dataset(path: Path, label: str) -> Path:
     return resolved
 
 
-def _write_partitioned(dataframe: Any, output_path: Path, row_count: int) -> None:
+def _write_partitioned(
+    dataframe: Any,
+    output_path: Path,
+    row_count: int,
+    partition_column: str,
+) -> None:
     writer = dataframe.write.mode("overwrite")
     if row_count > 0:
-        writer = writer.partitionBy("business_date")
+        writer = writer.partitionBy(partition_column)
     writer.parquet(str(Path(output_path).resolve()))
 
 
@@ -63,6 +69,7 @@ def build_gold_analytics(
     station_dimension_path: Path,
     daily_metrics_path: Path,
     popular_routes_path: Path,
+    cohort_retention_path: Path,
     route_limit: int = 3,
 ) -> GoldBuildResult:
     """Rebuild Gold outputs after end-exclusive point-in-time dimension joins."""
@@ -144,10 +151,54 @@ def build_gold_analytics(
             .withColumnRenamed("start_district", "district")
         )
 
+        rider_activity = enriched.select("rider_key", "business_date").distinct()
+        rider_cohorts = rider_activity.groupBy("rider_key").agg(
+            F.min("business_date").alias("cohort_date")
+        )
+        cohort_sizes = rider_cohorts.groupBy("cohort_date").agg(
+            F.count(F.lit(1)).alias("cohort_size")
+        )
+        retained = (
+            rider_activity.join(rider_cohorts, "rider_key", "inner")
+            .groupBy("cohort_date", F.col("business_date").alias("activity_date"))
+            .agg(F.countDistinct("rider_key").alias("retained_riders"))
+            .withColumn(
+                "days_since_cohort",
+                F.datediff("activity_date", "cohort_date"),
+            )
+        )
+        cohort_retention = (
+            retained.join(cohort_sizes, "cohort_date", "inner")
+            .withColumn(
+                "retention_rate",
+                (F.col("retained_riders") / F.col("cohort_size")).cast("decimal(8,4)"),
+            )
+            .select(
+                "cohort_date",
+                "activity_date",
+                "days_since_cohort",
+                "cohort_size",
+                "retained_riders",
+                "retention_rate",
+            )
+        )
+
         daily_metric_rows = daily_metrics.count()
         popular_route_rows = popular_routes.count()
-        _write_partitioned(daily_metrics, daily_metrics_path, daily_metric_rows)
-        _write_partitioned(popular_routes, popular_routes_path, popular_route_rows)
+        cohort_retention_rows = cohort_retention.count()
+        _write_partitioned(daily_metrics, daily_metrics_path, daily_metric_rows, "business_date")
+        _write_partitioned(
+            popular_routes,
+            popular_routes_path,
+            popular_route_rows,
+            "business_date",
+        )
+        _write_partitioned(
+            cohort_retention,
+            cohort_retention_path,
+            cohort_retention_rows,
+            "cohort_date",
+        )
     finally:
         cached_enriched.unpersist()
 
@@ -156,4 +207,5 @@ def build_gold_analytics(
         enriched_trip_rows=enriched_trip_rows,
         daily_metric_rows=daily_metric_rows,
         popular_route_rows=popular_route_rows,
+        cohort_retention_rows=cohort_retention_rows,
     )

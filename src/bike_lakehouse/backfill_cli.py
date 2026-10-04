@@ -23,6 +23,7 @@ def main() -> None:
     parser.add_argument("--station-dimension", type=Path, required=True)
     parser.add_argument("--gold-daily-metrics", type=Path, required=True)
     parser.add_argument("--gold-popular-routes", type=Path, required=True)
+    parser.add_argument("--gold-cohort-retention", type=Path, required=True)
     parser.add_argument("--backfill-manifest", type=Path, required=True)
     args = parser.parse_args()
     spark = create_local_spark("bike-trip-date-backfill", Path("build/spark-warehouse"))
@@ -39,6 +40,7 @@ def main() -> None:
             station_dimension_path=args.station_dimension,
             gold_daily_metrics_path=args.gold_daily_metrics,
             gold_popular_routes_path=args.gold_popular_routes,
+            gold_cohort_retention_path=args.gold_cohort_retention,
             backfill_manifest_path=args.backfill_manifest,
         )
         print(json.dumps(result.to_dict(), ensure_ascii=False, sort_keys=True))

@@ -11,6 +11,7 @@ from .generator import BIKE_TYPES, RIDER_TYPES, STATIONS
 
 BUSINESS_COLUMNS = [
     "trip_id",
+    "rider_key",
     "started_at",
     "ended_at",
     "start_station_id",
@@ -39,6 +40,7 @@ def _with_validation(dataframe: Any) -> Any:
 
     required = [
         "trip_id",
+        "rider_key",
         "started_at",
         "ended_at",
         "start_station_id",
@@ -58,6 +60,11 @@ def _with_validation(dataframe: Any) -> Any:
         F.when(
             F.col("trip_id").isNotNull() & ~F.col("trip_id").startswith("trip_"),
             F.lit("INVALID_TRIP_ID"),
+        ),
+        F.when(
+            F.col("rider_key").isNotNull()
+            & ~F.col("rider_key").rlike(r"^rider_[0-9a-f]{16}$"),
+            F.lit("INVALID_RIDER_KEY"),
         ),
         F.when(
             F.col("started_at").isNotNull()

@@ -22,6 +22,7 @@ from bike_lakehouse.spark import create_local_spark
 TRIP_SCHEMA = StructType(
     [
         StructField("trip_id", StringType(), False),
+        StructField("rider_key", StringType(), False),
         StructField("start_station_id", StringType(), False),
         StructField("end_station_id", StringType(), False),
         StructField("rider_type", StringType(), False),
@@ -46,6 +47,7 @@ DIMENSION_SCHEMA = StructType(
 
 def trip(
     trip_id: str,
+    rider_key: str,
     business_date: date,
     start: str,
     end: str,
@@ -56,6 +58,7 @@ def trip(
 ) -> tuple[object, ...]:
     return (
         trip_id,
+        rider_key,
         start,
         end,
         rider,
@@ -100,19 +103,19 @@ class GoldBuildTests(unittest.TestCase):
             routes = root / "routes"
             rows = [
                 trip(
-                    "t1", date(2026, 10, 1), "ST-001", "ST-002", "member", "classic", "10", "2"
+                    "t1", "rider_0000000000000001", date(2026, 10, 1), "ST-001", "ST-002", "member", "classic", "10", "2"
                 ),
                 trip(
-                    "t2", date(2026, 10, 1), "ST-001", "ST-002", "member", "classic", "20", "4"
+                    "t2", "rider_0000000000000002", date(2026, 10, 1), "ST-001", "ST-002", "member", "classic", "20", "4"
                 ),
                 trip(
-                    "t3", date(2026, 10, 1), "ST-001", "ST-003", "casual", "electric", "30", "6"
+                    "t3", "rider_0000000000000003", date(2026, 10, 1), "ST-001", "ST-003", "casual", "electric", "30", "6"
                 ),
                 trip(
-                    "t4", date(2026, 10, 2), "ST-001", "ST-002", "member", "classic", "40", "8"
+                    "t4", "rider_0000000000000001", date(2026, 10, 2), "ST-001", "ST-002", "member", "classic", "40", "8"
                 ),
                 trip(
-                    "t5", date(2026, 10, 2), "ST-002", "ST-001", "member", "classic", "50", "10"
+                    "t5", "rider_0000000000000004", date(2026, 10, 2), "ST-002", "ST-001", "member", "classic", "50", "10"
                 ),
             ]
             self.spark.createDataFrame(rows, TRIP_SCHEMA).write.mode("overwrite").parquet(
@@ -126,6 +129,7 @@ class GoldBuildTests(unittest.TestCase):
                 station_dimension_path=dimension,
                 daily_metrics_path=daily,
                 popular_routes_path=routes,
+                cohort_retention_path=root / "retention",
                 route_limit=2,
             )
 
@@ -133,6 +137,7 @@ class GoldBuildTests(unittest.TestCase):
             self.assertEqual(result.enriched_trip_rows, 5)
             self.assertEqual(result.daily_metric_rows, 3)
             self.assertEqual(result.popular_route_rows, 4)
+            self.assertEqual(result.cohort_retention_rows, 3)
             daily_frame = self.spark.read.parquet(str(daily))
             day_one_member = daily_frame.where(
                 "business_date = DATE '2026-10-01' AND district = '甲区' "
@@ -164,6 +169,28 @@ class GoldBuildTests(unittest.TestCase):
                 [("ST-002", 2, 1), ("ST-003", 1, 2)],
             )
             self.assertEqual(route_rows[0]["start_station_name"], "一号站旧名")
+            retention = (
+                self.spark.read.parquet(str(root / "retention"))
+                .orderBy("cohort_date", "days_since_cohort")
+                .collect()
+            )
+            self.assertEqual(
+                [
+                    (
+                        row["cohort_date"],
+                        row["days_since_cohort"],
+                        row["cohort_size"],
+                        row["retained_riders"],
+                        row["retention_rate"],
+                    )
+                    for row in retention
+                ],
+                [
+                    (date(2026, 10, 1), 0, 3, 3, Decimal("1.0000")),
+                    (date(2026, 10, 1), 1, 3, 1, Decimal("0.3333")),
+                    (date(2026, 10, 2), 0, 1, 1, Decimal("1.0000")),
+                ],
+            )
 
     def test_missing_point_in_time_dimension_fails_instead_of_dropping_trips(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -174,6 +201,7 @@ class GoldBuildTests(unittest.TestCase):
                 [
                     trip(
                         "missing",
+                        "rider_0000000000000001",
                         date(2026, 9, 30),
                         "ST-001",
                         "ST-002",
@@ -194,6 +222,7 @@ class GoldBuildTests(unittest.TestCase):
                     station_dimension_path=dimension,
                     daily_metrics_path=root / "daily",
                     popular_routes_path=root / "routes",
+                    cohort_retention_path=root / "retention",
                 )
 
 

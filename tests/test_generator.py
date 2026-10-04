@@ -15,6 +15,8 @@ class GeneratorTests(unittest.TestCase):
         second = generate_trips(30, seed=2027)
         self.assertEqual(first, second)
         self.assertEqual(len({row["trip_id"] for row in first}), 30)
+        self.assertLess(len({row["rider_key"] for row in first}), 30)
+        self.assertTrue(all(row["rider_key"].startswith("rider_") for row in first))
 
     def test_generated_records_pass_contracts(self) -> None:
         trips = generate_trips(20)
@@ -34,7 +36,15 @@ class GeneratorTests(unittest.TestCase):
 
     def test_no_direct_personal_fields_are_generated(self) -> None:
         serialized = json.dumps(generate_trips(20), ensure_ascii=False).lower()
-        for forbidden in ("name", "phone", "email", "address", "id_card", "latitude", "longitude"):
+        for forbidden in (
+            "name",
+            "phone",
+            "email",
+            "address",
+            "id_card",
+            "latitude",
+            "longitude",
+        ):
             self.assertNotIn(forbidden, serialized)
 
     def test_invalid_count_and_naive_time_are_rejected(self) -> None:
