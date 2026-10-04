@@ -75,5 +75,7 @@ git push origin main
 - 远程仓库 URL：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes>
 - 首次成功 CI：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/runs/37176098699>
 - 首次成功提交：`548fdf9dd0f57fe8d3b390887407140170bcb64b`
+- Node 24 Actions 升级后的成功 CI：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/runs/37186146080>
+- 对应提交：`e864b1d9d8c4a7a7d75784bfa167c3bbe89448ce`
 - 发布与首次成功日期：2026 年 10 月 4 日
 - 若 CI 与本机结果不同，记录原因和修复提交。
