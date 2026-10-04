@@ -1,0 +1,8 @@
+{"active": true, "capacity": 28, "district": "西市区", "snapshot_date": "2026-10-02", "station_id": "ST-001", "station_name": "滨河公园"}
+{"active": true, "capacity": 36, "district": "站前区", "snapshot_date": "2026-10-02", "station_id": "ST-002", "station_name": "辽河广场"}
+{"active": true, "capacity": 48, "district": "西市区", "snapshot_date": "2026-10-02", "station_id": "ST-003", "station_name": "大学园区"}
+{"active": true, "capacity": 32, "district": "站前区", "snapshot_date": "2026-10-02", "station_id": "ST-004", "station_name": "客运中心"}
+{"active": true, "capacity": 24, "district": "西市区", "snapshot_date": "2026-10-02", "station_id": "ST-005", "station_name": "科技馆东门"}
+{"active": true, "capacity": 30, "district": "站前区", "snapshot_date": "2026-10-02", "station_id": "ST-006", "station_name": "体育场"}
+{"active": true, "capacity": 40, "district": "沿海产业基地", "snapshot_date": "2026-10-02", "station_id": "ST-007", "station_name": "沿海产业基地"}
+{"active": false, "capacity": 26, "district": "西市区", "snapshot_date": "2026-10-02", "station_id": "ST-008", "station_name": "民兴河公园"}
