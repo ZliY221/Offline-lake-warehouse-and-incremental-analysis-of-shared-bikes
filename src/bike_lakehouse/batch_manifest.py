@@ -24,7 +24,7 @@ def fingerprint_file(path: Path) -> tuple[str, int]:
     return digest.hexdigest(), byte_count
 
 
-def _atomic_write(path: Path, payload: dict[str, Any]) -> None:
+def write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.parent / f".{path.name}.{uuid4().hex}.tmp"
     try:
@@ -65,7 +65,7 @@ class BatchManifest:
             "error_type": None,
             "error_message": None,
         }
-        _atomic_write(self.path, self.payload)
+        write_json_atomic(self.path, self.payload)
 
     def complete(self, **metrics: Any) -> None:
         self.payload.update(metrics)
@@ -73,7 +73,7 @@ class BatchManifest:
             status="SUCCEEDED",
             completed_at_utc=utc_timestamp(),
         )
-        _atomic_write(self.path, self.payload)
+        write_json_atomic(self.path, self.payload)
 
     def fail(self, error: Exception) -> None:
         self.payload.update(
@@ -82,4 +82,4 @@ class BatchManifest:
             error_type=type(error).__name__,
             error_message=str(error)[:1000],
         )
-        _atomic_write(self.path, self.payload)
+        write_json_atomic(self.path, self.payload)
