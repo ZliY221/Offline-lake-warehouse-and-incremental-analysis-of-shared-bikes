@@ -166,9 +166,9 @@ Gold 先按行程业务日期分别关联起点、终点在当日有效的 SCD2 
 ./scripts/run-benchmark.ps1
 ```
 
-固定 10,000 行、2,567,025 字节 NDJSON，在 WSL2、Spark 4.2.0、JDK 17、Python 3.14.4、`local[2]`、约 7.35 GiB 可用内存环境中，复用单个 Spark 会话，先预热 1 轮再测量 3 轮。端到端完整执行 Bronze 覆盖、Silver 全量重建和 Gold 全量重建，中位耗时 15.961 秒，即 626.53 输入行/秒；Spark/JVM 启动和测试数据生成不计入。
+固定 10,000 行、2,957,025 字节 NDJSON，在 WSL2、Spark 4.2.0、JDK 17、Python 3.14.4、`local[2]`、约 7.35 GiB 可用内存环境中，复用单个 Spark 会话，先预热 1 轮再测量 3 轮。端到端完整执行 Bronze 覆盖、Silver 全量重建，以及包含日指标、路线和 cohort 留存的 Gold 全量重建，中位耗时 19.995 秒，即 500.13 输入行/秒；Spark/JVM 启动和测试数据生成不计入。
 
-三轮端到端原始耗时为 16.483、15.961、15.749 秒；阶段中位数为 Bronze 1.845 秒、Silver 5.805 秒、Gold 8.312 秒。完整环境、输入 SHA-256、方法和逐轮结果见 [`evidence/benchmark-10000-local.json`](evidence/benchmark-10000-local.json)。这些数字只代表该本机基准，不外推为生产集群能力。
+三轮端到端原始耗时为 21.782、19.995、19.906 秒；阶段中位数为 Bronze 1.883 秒、Silver 5.931 秒、Gold 12.508 秒。每轮都输出 10,000 行合法 Silver、108 行日指标、81 行热门路线和 45 行 cohort 留存。完整环境、输入 SHA-256、方法和逐轮结果见 [`evidence/benchmark-10000-local.json`](evidence/benchmark-10000-local.json)。这些数字只代表该本机基准，不外推为生产集群能力。
 
 ## 自动化验证
 
