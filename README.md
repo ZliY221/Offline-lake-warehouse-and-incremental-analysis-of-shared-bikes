@@ -30,16 +30,18 @@
 | 电商实时数据仓库 | Kafka、Flink、ClickHouse、Watermark、状态去重、至少一次写入 |
 | 共享单车离线湖仓 | Spark DataFrame/SQL、Parquet 分区、增量覆盖、SCD2、离线质量与回填 |
 
-## 计划数据流
+## 实现数据流
 
 ```mermaid
 flowchart LR
     A[确定性行程与站点快照] --> B[Bronze 原始 Parquet]
     B --> C[Silver 校验 去重 标准化]
     A --> D[Silver 站点 SCD2]
-    C --> E[Gold 日指标与热门路线]
+    C --> E[Gold 日指标 热门路线 Cohort留存]
     D --> E
-    E --> F[SQL 验收与数据质量报告]
+    E --> F[跨层数据质量报告]
+    B --> G[批次清单与受控回填]
+    G --> F
 ```
 
 ## 当前目录
@@ -50,8 +52,9 @@ bike-trip-lakehouse/
 ├─ data/sample/              固定脱敏正常样例
 ├─ data/quality/             固定质量问题演示批次
 ├─ docs/                     需求、架构和学习材料
+├─ evidence/                 经核验的原始性能证据
 ├─ scripts/                  环境探测、生成和测试脚本
-├─ src/bike_lakehouse/       生成器、契约与 Spark Bronze 装载
+├─ src/bike_lakehouse/       分层作业、控制流程、质量与基准代码
 ├─ tests/                    Python 与本地 Spark 测试
 ├─ pyproject.toml
 └─ README.md
@@ -177,6 +180,14 @@ Gold 先按行程业务日期分别关联起点、终点在当日有效的 SCD2 
 ```
 
 当前测试覆盖确定性、契约、金额/时间边界、匿名键格式与隐私字段、显式 Spark Schema、Parquet 类型、同分区幂等重跑、跨日期分区保留、确定性批次清单、状态与失败记录、单日期回填预检及下游重建、质量失败、精确/冲突重复、派生字段、空输出 Schema、Silver 完整重建幂等、站点 SCD2 连续有效期与冲突处理，以及 Gold 时态关联、手工指标核对、路线排名、cohort 留存和维度缺失保护。
+
+## 一键作品集验收
+
+```powershell
+./scripts/run-portfolio-demo.ps1
+```
+
+脚本使用隔离的 `build/portfolio-demo/` 输出目录，依次重建所有数据层、执行 6 项跨层质量门禁并运行全部测试，最终输出机器可读摘要。架构、数据粒度和约束见 [`docs/architecture.md`](docs/architecture.md)，面试讲解与追问准备见 [`docs/interview-guide.md`](docs/interview-guide.md)。
 
 ## 当前边界
 
