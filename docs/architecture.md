@@ -55,11 +55,11 @@ flowchart LR
 
 ## 失败与恢复
 
-Bronze 与回填先写 `RUNNING` 控制记录，成功转为 `SUCCEEDED`，异常转为 `FAILED`。JSON 通过同目录临时文件加原子替换提交，防止半写文件。回填只替换目标 Bronze 分区；Silver 和 Gold 当前明确采用全量重建。相同输入、日期和 SHA-256 生成相同批次身份，重跑增加尝试次数。
+Bronze 与回填先写 `RUNNING` 控制记录，成功转为 `SUCCEEDED`，异常转为 `FAILED`。JSON 通过同目录临时文件加原子替换提交，防止半写文件。回填先验证业务日期和全局合法 `trip_id` 分区隔离，再替换目标 Bronze/Silver 分区与目标日期的 Gold 日指标、路线分区；cohort 依赖所有骑行者的首次活动日，因此全量重算。相同输入、日期和 SHA-256 生成相同批次身份，重跑增加尝试次数。当前各层文件写入不具备跨作业事务提交能力。
 
 ## 可验证入口
 
 - `scripts/run-portfolio-demo.ps1`：隔离目录内重建全部层、执行质量门禁和测试；
-- `scripts/test-all.ps1`：运行 20 项自动化测试；
+- `scripts/test-all.ps1`：运行 21 项自动化测试；
 - `scripts/run-benchmark.ps1`：1 轮预热加 3 轮本机性能测量；
 - `evidence/benchmark-10000-local.json`：保存环境、输入指纹和逐轮原始结果。
