@@ -341,3 +341,24 @@ def build_trip_silver_partition(
     finally:
         all_validated.unpersist()
     return result
+
+
+def valid_rider_keys_for_bronze_partition(
+    spark: Any,
+    *,
+    bronze_path: Path,
+    target_date: date,
+) -> Any:
+    """Preview rider keys that will survive validation and deduplication in one partition."""
+    from pyspark.sql import functions as F
+
+    bronze_path = Path(bronze_path).resolve()
+    if not bronze_path.is_dir():
+        raise ValueError(f"Bronze trip dataset does not exist: {bronze_path}")
+    all_validated = _with_validation(spark.read.parquet(str(bronze_path)))
+    _assert_partition_isolation(_valid_candidate_partitions(all_validated))
+    target = F.lit(target_date.isoformat()).cast("date")
+    valid, _, _ = _classify_validated(
+        all_validated.where(F.col("ingestion_date") == target)
+    )
+    return valid.select("rider_key").distinct()

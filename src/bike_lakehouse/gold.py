@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Collection
 from dataclasses import asdict, dataclass
 from datetime import date
 from pathlib import Path
@@ -168,6 +169,51 @@ def _build_cohort_retention(trips: Any) -> Any:
     )
 
 
+def silver_rider_keys_for_date(
+    spark: Any,
+    *,
+    silver_trip_path: Path,
+    target_date: date,
+) -> Any:
+    """Return distinct riders active on one date, or an empty typed DataFrame."""
+    from pyspark.sql import functions as F
+
+    silver_path = Path(silver_trip_path).resolve()
+    if not silver_path.is_dir():
+        return spark.createDataFrame([], "rider_key string")
+    target = F.lit(target_date.isoformat()).cast("date")
+    return (
+        spark.read.parquet(str(silver_path))
+        .where(F.col("business_date") == target)
+        .select("rider_key")
+        .distinct()
+    )
+
+
+def cohort_dates_for_riders(
+    spark: Any,
+    *,
+    silver_trip_path: Path,
+    rider_keys: Any,
+) -> set[date]:
+    """Find current cohort partitions for a materialized set of affected riders."""
+    silver_path = Path(silver_trip_path).resolve()
+    if not silver_path.is_dir():
+        return set()
+    from pyspark.sql import functions as F
+
+    cohorts = spark.read.parquet(str(silver_path)).groupBy("rider_key").agg(
+        F.min("business_date").alias("cohort_date")
+    )
+    return {
+        row["cohort_date"]
+        for row in cohorts.join(rider_keys, "rider_key", "inner")
+        .select("cohort_date")
+        .distinct()
+        .collect()
+    }
+
+
 def build_gold_analytics(
     spark: Any,
     *,
@@ -240,9 +286,10 @@ def build_gold_analytics_partition(
     daily_metrics_path: Path,
     popular_routes_path: Path,
     cohort_retention_path: Path,
+    affected_cohort_dates: Collection[date],
     route_limit: int = 3,
 ) -> GoldBuildResult:
-    """Replace one daily/route partition and fully rebuild dependency-wide cohorts."""
+    """Replace one daily/route partition and every dependency-affected cohort partition."""
     from pyspark.sql import functions as F
 
     if route_limit <= 0:
@@ -286,14 +333,25 @@ def build_gold_analytics_partition(
         finally:
             cached_enriched.unpersist()
 
-        cohort_retention = _build_cohort_retention(all_trips)
-        cohort_retention_rows = cohort_retention.count()
-        _write_partitioned(
-            cohort_retention,
-            cohort_retention_path,
-            cohort_retention_rows,
-            "cohort_date",
-        )
+        cohort_retention_rows = 0
+        cohort_dates = sorted(set(affected_cohort_dates))
+        if cohort_dates:
+            cohort_retention = _build_cohort_retention(all_trips).cache()
+            try:
+                for cohort_date in cohort_dates:
+                    partition = cohort_retention.where(
+                        F.col("cohort_date")
+                        == F.lit(cohort_date.isoformat()).cast("date")
+                    )
+                    cohort_retention_rows += partition.count()
+                    replace_date_partition(
+                        partition,
+                        cohort_retention_path,
+                        "cohort_date",
+                        cohort_date,
+                    )
+            finally:
+                cohort_retention.unpersist()
     finally:
         all_trips.unpersist()
 

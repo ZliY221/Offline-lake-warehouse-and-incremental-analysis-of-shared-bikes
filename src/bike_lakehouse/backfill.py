@@ -10,8 +10,16 @@ from typing import Any
 from .batch_manifest import BatchManifest, fingerprint_file
 from .bronze import ingest_trip_bronze
 from .contracts import trip_source_schema
-from .gold import build_gold_analytics_partition
-from .silver import build_trip_silver_partition, validate_partition_isolated_backfill
+from .gold import (
+    build_gold_analytics_partition,
+    cohort_dates_for_riders,
+    silver_rider_keys_for_date,
+)
+from .silver import (
+    build_trip_silver_partition,
+    valid_rider_keys_for_bronze_partition,
+    validate_partition_isolated_backfill,
+)
 
 
 @dataclass(frozen=True)
@@ -24,7 +32,7 @@ class BackfillResult:
     silver_duplicate_rows: int
     gold_daily_metric_rows: int
     gold_popular_route_rows: int
-    gold_cohort_retention_rows: int
+    gold_affected_cohort_retention_rows: int
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -70,7 +78,7 @@ def run_date_backfill(
     gold_cohort_retention_path: Path,
     backfill_manifest_path: Path,
 ) -> BackfillResult:
-    """Replace one isolated date through daily Gold while rebuilding global cohorts."""
+    """Replace one isolated date and every dependency-affected downstream partition."""
     input_path = Path(input_path).resolve()
     if not input_path.is_file():
         raise ValueError(f"Backfill input file does not exist: {input_path}")
@@ -92,7 +100,8 @@ def run_date_backfill(
             "silver_rebuild_scope": "TARGET_INGESTION_DATE",
             "gold_daily_metrics_rebuild_scope": "TARGET_BUSINESS_DATE",
             "gold_popular_routes_rebuild_scope": "TARGET_BUSINESS_DATE",
-            "gold_cohort_retention_rebuild_scope": "FULL_DATASET",
+            "gold_cohort_retention_rebuild_scope": "AFFECTED_COHORT_DATES",
+            "gold_cohort_retention_compute_scope": "FULL_DATASET_SCAN",
             "cross_partition_trip_id_policy": "REJECT_BEFORE_WRITE",
         },
     )
@@ -111,23 +120,50 @@ def run_date_backfill(
             ingestion_date=target_date,
             manifest_path=bronze_manifest_path,
         )
-        silver = build_trip_silver_partition(
+        old_target_riders = silver_rider_keys_for_date(
+            spark,
+            silver_trip_path=silver_valid_path,
+            target_date=target_date,
+        )
+        new_target_riders = valid_rider_keys_for_bronze_partition(
             spark,
             bronze_path=bronze_path,
             target_date=target_date,
-            valid_path=silver_valid_path,
-            rejected_path=silver_rejected_path,
-            duplicate_path=silver_duplicate_path,
         )
-        gold = build_gold_analytics_partition(
-            spark,
-            target_date=target_date,
-            silver_trip_path=silver_valid_path,
-            station_dimension_path=station_dimension_path,
-            daily_metrics_path=gold_daily_metrics_path,
-            popular_routes_path=gold_popular_routes_path,
-            cohort_retention_path=gold_cohort_retention_path,
-        )
+        affected_riders = old_target_riders.unionByName(new_target_riders).distinct().cache()
+        try:
+            affected_rider_count = affected_riders.count()
+            old_cohort_dates = cohort_dates_for_riders(
+                spark,
+                silver_trip_path=silver_valid_path,
+                rider_keys=affected_riders,
+            )
+            silver = build_trip_silver_partition(
+                spark,
+                bronze_path=bronze_path,
+                target_date=target_date,
+                valid_path=silver_valid_path,
+                rejected_path=silver_rejected_path,
+                duplicate_path=silver_duplicate_path,
+            )
+            new_cohort_dates = cohort_dates_for_riders(
+                spark,
+                silver_trip_path=silver_valid_path,
+                rider_keys=affected_riders,
+            )
+            affected_cohort_dates = sorted(old_cohort_dates | new_cohort_dates)
+            gold = build_gold_analytics_partition(
+                spark,
+                target_date=target_date,
+                silver_trip_path=silver_valid_path,
+                station_dimension_path=station_dimension_path,
+                daily_metrics_path=gold_daily_metrics_path,
+                popular_routes_path=gold_popular_routes_path,
+                cohort_retention_path=gold_cohort_retention_path,
+                affected_cohort_dates=affected_cohort_dates,
+            )
+        finally:
+            affected_riders.unpersist()
         result = BackfillResult(
             backfill_id=backfill_id,
             target_date=target_date.isoformat(),
@@ -137,7 +173,7 @@ def run_date_backfill(
             silver_duplicate_rows=silver.duplicate_rows,
             gold_daily_metric_rows=gold.daily_metric_rows,
             gold_popular_route_rows=gold.popular_route_rows,
-            gold_cohort_retention_rows=gold.cohort_retention_rows,
+            gold_affected_cohort_retention_rows=gold.cohort_retention_rows,
         )
         manifest.complete(
             input_rows=bronze.input_rows,
@@ -146,6 +182,10 @@ def run_date_backfill(
             bronze_result=bronze.to_dict(),
             silver_result=silver.to_dict(),
             gold_result=gold.to_dict(),
+            affected_rider_count=affected_rider_count,
+            affected_gold_cohort_retention_partitions=[
+                cohort_date.isoformat() for cohort_date in affected_cohort_dates
+            ],
         )
     except Exception as error:
         manifest.fail(error)
