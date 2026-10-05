@@ -10,8 +10,8 @@ from typing import Any
 from .batch_manifest import BatchManifest, fingerprint_file
 from .bronze import ingest_trip_bronze
 from .contracts import trip_source_schema
-from .gold import build_gold_analytics
-from .silver import build_trip_silver
+from .gold import build_gold_analytics_partition
+from .silver import build_trip_silver_partition, validate_partition_isolated_backfill
 
 
 @dataclass(frozen=True)
@@ -70,7 +70,7 @@ def run_date_backfill(
     gold_cohort_retention_path: Path,
     backfill_manifest_path: Path,
 ) -> BackfillResult:
-    """Replace one Bronze partition, then fully rebuild dependent Silver and Gold."""
+    """Replace one isolated date through daily Gold while rebuilding global cohorts."""
     input_path = Path(input_path).resolve()
     if not input_path.is_file():
         raise ValueError(f"Backfill input file does not exist: {input_path}")
@@ -86,12 +86,24 @@ def run_date_backfill(
             "source_sha256": source_sha256,
             "source_bytes": source_bytes,
             "affected_bronze_partitions": [target_date.isoformat()],
-            "silver_rebuild_scope": "FULL_DATASET",
-            "gold_rebuild_scope": "FULL_DATASET",
+            "affected_silver_partitions": [target_date.isoformat()],
+            "affected_gold_daily_metric_partitions": [target_date.isoformat()],
+            "affected_gold_popular_route_partitions": [target_date.isoformat()],
+            "silver_rebuild_scope": "TARGET_INGESTION_DATE",
+            "gold_daily_metrics_rebuild_scope": "TARGET_BUSINESS_DATE",
+            "gold_popular_routes_rebuild_scope": "TARGET_BUSINESS_DATE",
+            "gold_cohort_retention_rebuild_scope": "FULL_DATASET",
+            "cross_partition_trip_id_policy": "REJECT_BEFORE_WRITE",
         },
     )
     try:
         _validate_source_dates(spark, input_path, target_date)
+        validate_partition_isolated_backfill(
+            spark,
+            bronze_path=bronze_path,
+            input_path=input_path,
+            target_date=target_date,
+        )
         bronze = ingest_trip_bronze(
             spark,
             input_path=input_path,
@@ -99,15 +111,17 @@ def run_date_backfill(
             ingestion_date=target_date,
             manifest_path=bronze_manifest_path,
         )
-        silver = build_trip_silver(
+        silver = build_trip_silver_partition(
             spark,
             bronze_path=bronze_path,
+            target_date=target_date,
             valid_path=silver_valid_path,
             rejected_path=silver_rejected_path,
             duplicate_path=silver_duplicate_path,
         )
-        gold = build_gold_analytics(
+        gold = build_gold_analytics_partition(
             spark,
+            target_date=target_date,
             silver_trip_path=silver_valid_path,
             station_dimension_path=station_dimension_path,
             daily_metrics_path=gold_daily_metrics_path,
