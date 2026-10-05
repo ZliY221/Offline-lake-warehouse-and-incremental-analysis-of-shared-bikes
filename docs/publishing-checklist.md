@@ -24,9 +24,10 @@ git log --oneline -10
 
 - `git status --short` 无输出；
 - 发布审计不存在高置信密钥或超过 20 MiB 的跟踪文件；`PASS_WITH_REVIEW` 项逐条确认是合成测试内容；
-- 一键演示最后输出 `"status": "PASS"`、`"automated_tests": "PASS"`；
+- 一键演示最后输出 `"status": "PASS"`、`"automated_tests": "PASS"`、`"spark_plan_analysis": "PASS"`；
 - 质量检查数为 6，正式样例行数与 README 一致；
 - `evidence/benchmark-10000-local.json` 能被 JSON 解析；
+- `evidence/spark-plan-analysis-local.json` 同时包含 Sort-Merge、显式 Broadcast Hash Join 与 AQE 计划证据；
 - 仓库内没有简历 PDF、证书原图、学籍验证码、手机号、邮箱密钥或 `.env`。
 
 ## 当前审计结果
@@ -81,5 +82,7 @@ git push origin main
 - 对应提交：`85e3dfffc47ecd4348e008d7835c9246d02f2ac8`；21 项测试通过，覆盖非目标分区文件哈希不变与跨分区主键写前失败。
 - Cohort 旧/新归属依赖传播成功 CI：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/runs/37252400028>
 - 对应提交：`eabfe8cdc38078f9b570da779280250e5904fb62`；验证只写受影响 cohort 分区，同时明确计算仍为完整 Silver 扫描。
+- Spark 物理计划证据成功 CI：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/runs/37253997852>
+- 对应提交：`aed97c1d05398dbcea2486c0c51ae43880d721cb`；23 项测试通过，并保存 Sort-Merge、显式 Broadcast Hash Join 与 AQE 的真实格式化计划。该证据只证明计划选择和结果等价，不作为生产性能结论。
 - 发布与首次成功日期：2026 年 10 月 4 日
 - 若 CI 与本机结果不同，记录原因和修复提交。
