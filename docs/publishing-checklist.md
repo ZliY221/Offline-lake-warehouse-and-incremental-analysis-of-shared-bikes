@@ -87,5 +87,7 @@ git push origin main
 - 对应提交：`aed97c1d05398dbcea2486c0c51ae43880d721cb`；23 项测试通过，并保存 Sort-Merge、显式 Broadcast Hash Join 与 AQE 的真实格式化计划。该证据只证明计划选择和结果等价，不作为生产性能结论。
 - AQE 最终计划与倾斜 Join 证据成功 CI：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/runs/37255277521>
 - 对应提交：`0e02a82cc23e9b7a8dd1615b2fff32f0146b8cb5`；23 项测试通过，最终计划实际观察到 `AQEShuffleRead coalesced`、`SortMergeJoin(skew=true)` 与倾斜分区读取，并验证优化前后结果一致。
+- Spark UI REST Stage/Task 指标成功 CI：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/runs/37277811133>
+- 对应提交：`c1efbbdd34f082dc0a2f0eb1dfce0125a2c89f3e`；25 项测试通过，实时采集目标 Job、完成 Stage、任务耗时、Shuffle、GC 与 Spill 指标；本机静态网页受中文路径限制，不列为已验证证据。
 - 发布与首次成功日期：2026 年 10 月 4 日
 - 若 CI 与本机结果不同，记录原因和修复提交。
