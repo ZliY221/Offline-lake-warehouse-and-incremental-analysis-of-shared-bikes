@@ -24,6 +24,7 @@
 - [x] 使用纯合成匿名骑行者键实现 cohort 留存分析。
 - [x] 完成 Sort-Merge Join、显式 Broadcast Hash Join 与 AQE 的真实格式化物理计划证据。
 - [x] 构造 90% 热点键倾斜场景，验证 AQE 最终计划的分区合并与倾斜 Join 拆分。
+- [x] 通过 Spark UI `/api/v1` 保存 Job、Stage 和 Task 级 Shuffle、耗时、GC 与 Spill 指标。
 
 ## 为什么单独建仓
 
@@ -183,7 +184,7 @@ Gold 先按行程业务日期分别关联起点、终点在当日有效的 SCD2 
 ./scripts/test-all.ps1
 ```
 
-当前 23 项测试覆盖确定性、契约、金额/时间边界、匿名键格式与隐私字段、显式 Spark Schema、Parquet 类型、同分区幂等重跑、跨日期分区保留、确定性批次清单、状态与失败记录、单日期回填预检、跨分区主键写前保护、非目标分区文件哈希不变、cohort 旧新归属日期传播、质量失败、精确/冲突重复、派生字段、空输出 Schema、Silver 完整重建幂等、站点 SCD2 连续有效期与冲突处理、Gold 时态关联与留存，以及真实 Spark 物理计划的 Join 策略变化和结果等价。
+当前 25 项测试覆盖确定性、契约、金额/时间边界、匿名键格式与隐私字段、显式 Spark Schema、Parquet 类型、同分区幂等重跑、跨日期分区保留、确定性批次清单、状态与失败记录、单日期回填预检、跨分区主键写前保护、非目标分区文件哈希不变、cohort 旧新归属日期传播、质量失败、精确/冲突重复、派生字段、空输出 Schema、Silver 完整重建幂等、站点 SCD2、Gold 时态关联与留存、真实 Spark 物理计划，以及 Spark UI REST 的 Job/Stage/Task 指标采集。
 
 ## Spark 执行计划证据
 
@@ -195,13 +196,23 @@ Gold 先按行程业务日期分别关联起点、终点在当日有效的 SCD2 
 
 另一个受控实验生成 20,000 行事实数据，其中 90% 使用同一个热点键。禁用 AQE 的结果作为基线；开启 AQE 倾斜优化后，最终计划出现 `SortMergeJoin(skew=true)` 与 `AQEShuffleRead ... skewed`，8 个分组的行数和载荷字符总数与基线完全一致。原始 JSON 与展开计划见 [`evidence/spark-plan-analysis-local.json`](evidence/spark-plan-analysis-local.json) 和 [`evidence/spark-plan-analysis-local.md`](evidence/spark-plan-analysis-local.md)。这些实验只证明本机合成数据上的计划变化和结果等价，不是生产性能提升或 SLA 证据。
 
+## Spark UI Stage/Task 指标证据
+
+```powershell
+./scripts/explain-spark-stage-metrics.ps1
+```
+
+脚本在 Spark 停止前调用 UI 的 `/api/v1`，按 Job Group 定位受控的 50,000 行聚合作业，再保存 Job、完成 Stage 和任务级指标。本机证据包含 1 个 Job、2 个完成 Stage、10 个 Task，累计 Shuffle 写入与读取均为 3,302,403 字节，内存与磁盘 Spill 均为 0；最繁忙 Shuffle Stage 的 8 个任务还保留执行时间、CPU、GC 和逐任务 Shuffle 字节数。原始证据见 [`evidence/spark-stage-metrics-local.json`](evidence/spark-stage-metrics-local.json) 与 [`evidence/spark-stage-metrics-local.md`](evidence/spark-stage-metrics-local.md)。耗时受 JVM 预热和本机调度影响，不能仅凭最大/中位数比值断言数据倾斜，也不能外推集群容量。
+
+当前仓库位于包含中文的 Windows 路径，Spark 4.2 的 Jetty 静态资源加载会打印 `Bad escape` 告警，但已实测 `/api/v1` JSON 指标接口可用；因此仓库保存的是 REST 原始指标，不把本机静态网页截图作为证据。
+
 ## 一键作品集验收
 
 ```powershell
 ./scripts/run-portfolio-demo.ps1
 ```
 
-脚本使用隔离的 `build/portfolio-demo/` 输出目录，依次重建所有数据层、执行 6 项跨层质量门禁、验证三类 Spark 物理计划并运行全部测试，最终输出机器可读摘要。架构、数据粒度和约束见 [`docs/architecture.md`](docs/architecture.md)，面试讲解与追问准备见 [`docs/interview-guide.md`](docs/interview-guide.md)，公开仓库与远程 CI 的验收证据见 [`docs/publishing-checklist.md`](docs/publishing-checklist.md)。
+脚本使用隔离的 `build/portfolio-demo/` 输出目录，依次重建所有数据层、执行 6 项跨层质量门禁、验证 Spark 物理计划并运行包含 UI REST 采集的全部测试，最终输出机器可读摘要。架构、数据粒度和约束见 [`docs/architecture.md`](docs/architecture.md)，面试讲解与追问准备见 [`docs/interview-guide.md`](docs/interview-guide.md)，公开仓库与远程 CI 的验收证据见 [`docs/publishing-checklist.md`](docs/publishing-checklist.md)。
 
 ## 当前边界
 
