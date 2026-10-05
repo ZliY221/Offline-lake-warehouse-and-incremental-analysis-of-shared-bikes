@@ -28,6 +28,7 @@ git log --oneline -10
 - 质量检查数为 6，正式样例行数与 README 一致；
 - `evidence/benchmark-10000-local.json` 能被 JSON 解析；
 - `evidence/spark-plan-analysis-local.json` 同时包含 Sort-Merge、显式 Broadcast Hash Join、AQE 最终计划、分区合并与倾斜 Join 证据；
+- `evidence/spark-stage-metrics-local.json` 包含目标 Job、完成 Stage、Task 分布和非零 Shuffle 读写，且不得保存本机用户路径；
 - 仓库内没有简历 PDF、证书原图、学籍验证码、手机号、邮箱密钥或 `.env`。
 
 ## 当前审计结果
