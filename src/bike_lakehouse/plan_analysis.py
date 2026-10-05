@@ -22,6 +22,9 @@ PLAN_TOKENS = (
     "AdaptiveSparkPlan",
     "AQEShuffleRead",
     "coalesced",
+    "isFinalPlan=true",
+    "skew=true",
+    "skewed",
 )
 
 
@@ -43,7 +46,37 @@ def plan_features(plan: str) -> dict[str, int]:
 
 
 def _result_rows(dataframe: Any) -> list[dict[str, object]]:
-    return [row.asDict(recursive=True) for row in dataframe.orderBy("district").collect()]
+    rows = [row.asDict(recursive=True) for row in dataframe.collect()]
+    return sorted(rows, key=lambda row: str(row.get("district", "")))
+
+
+def _skewed_facts(spark: Any, *, row_count: int, hot_ratio: float) -> Any:
+    from pyspark.sql import functions as F
+
+    hot_rows = int(row_count * hot_ratio)
+    return spark.range(row_count).select(
+        F.when(F.col("id") < hot_rows, F.lit(0))
+        .otherwise(((F.col("id") - hot_rows) % 7) + 1)
+        .cast("long")
+        .alias("station_key"),
+        F.sha2(
+            F.concat_ws("-", F.col("id").cast("string"), F.lit("skew-evidence")),
+            256,
+        ).alias("payload"),
+    )
+
+
+def _skew_join_aggregate(facts: Any, dimension: Any) -> Any:
+    from pyspark.sql import functions as F
+
+    return (
+        facts.join(dimension, "station_key", "inner")
+        .groupBy("district")
+        .agg(
+            F.count(F.lit(1)).alias("trip_count"),
+            F.sum(F.length("payload")).alias("payload_characters"),
+        )
+    )
 
 
 def build_plan_analysis(spark: Any, *, fact_rows: int = 1_000) -> dict[str, object]:
@@ -64,6 +97,12 @@ def build_plan_analysis(spark: Any, *, fact_rows: int = 1_000) -> dict[str, obje
     config_keys = (
         "spark.sql.adaptive.enabled",
         "spark.sql.adaptive.coalescePartitions.enabled",
+        "spark.sql.adaptive.skewJoin.enabled",
+        "spark.sql.adaptive.skewJoin.skewedPartitionFactor",
+        "spark.sql.adaptive.skewJoin.skewedPartitionThresholdInBytes",
+        "spark.sql.adaptive.forceOptimizeSkewedJoin",
+        "spark.sql.adaptive.advisoryPartitionSizeInBytes",
+        "spark.sql.adaptive.autoBroadcastJoinThreshold",
         "spark.sql.autoBroadcastJoinThreshold",
         "spark.sql.shuffle.partitions",
     )
@@ -107,9 +146,49 @@ def build_plan_analysis(spark: Any, *, fact_rows: int = 1_000) -> dict[str, obje
         )
         adaptive_rows = _result_rows(adaptive)
         adaptive_plan = normalize_plan(capture_formatted_plan(adaptive))
+
+        skew_row_count = max(fact_rows * 20, 20_000)
+        skew_hot_ratio = 0.9
+        skew_hot_rows = int(skew_row_count * skew_hot_ratio)
+        skew_facts = _skewed_facts(
+            spark,
+            row_count=skew_row_count,
+            hot_ratio=skew_hot_ratio,
+        )
+        skew_dimension = spark.createDataFrame(
+            [(index, f"district-{index}") for index in range(8)],
+            "station_key long, district string",
+        )
+
+        spark.conf.set("spark.sql.adaptive.enabled", "false")
+        spark.conf.set("spark.sql.autoBroadcastJoinThreshold", "-1")
+        spark.conf.set("spark.sql.adaptive.autoBroadcastJoinThreshold", "-1")
+        spark.conf.set("spark.sql.shuffle.partitions", "8")
+        skew_baseline = _skew_join_aggregate(skew_facts, skew_dimension)
+        skew_baseline_rows = _result_rows(skew_baseline)
+        skew_baseline_plan = normalize_plan(capture_formatted_plan(skew_baseline))
+
+        spark.conf.set("spark.sql.adaptive.enabled", "true")
+        spark.conf.set("spark.sql.adaptive.coalescePartitions.enabled", "false")
+        spark.conf.set("spark.sql.adaptive.skewJoin.enabled", "true")
+        spark.conf.set("spark.sql.adaptive.skewJoin.skewedPartitionFactor", "2")
+        spark.conf.set(
+            "spark.sql.adaptive.skewJoin.skewedPartitionThresholdInBytes",
+            "8KB",
+        )
+        spark.conf.set("spark.sql.adaptive.forceOptimizeSkewedJoin", "true")
+        spark.conf.set("spark.sql.adaptive.advisoryPartitionSizeInBytes", "64KB")
+        adaptive_skew = _skew_join_aggregate(skew_facts, skew_dimension)
+        adaptive_skew_rows = _result_rows(adaptive_skew)
+        adaptive_skew_plan = normalize_plan(capture_formatted_plan(adaptive_skew))
+        if adaptive_skew_rows != skew_baseline_rows:
+            raise ValueError("AQE skew strategy changed aggregate results")
     finally:
         for key, value in original.items():
-            spark.conf.set(key, value)
+            if value is None:
+                spark.conf.unset(key)
+            else:
+                spark.conf.set(key, value)
 
     return {
         "report_version": "1.0",
@@ -162,6 +241,39 @@ def build_plan_analysis(spark: Any, *, fact_rows: int = 1_000) -> dict[str, obje
             "features": plan_features(adaptive_plan),
             "formatted_plan": adaptive_plan,
         },
+        "skew_input": {
+            "fact_rows": skew_row_count,
+            "hot_key": 0,
+            "hot_key_rows": skew_hot_rows,
+            "hot_key_ratio": skew_hot_ratio,
+            "other_keys": 7,
+        },
+        "skew_baseline": {
+            "settings": {
+                "adaptive_enabled": False,
+                "auto_broadcast_join_threshold": -1,
+                "shuffle_partitions": 8,
+            },
+            "result": skew_baseline_rows,
+            "features": plan_features(skew_baseline_plan),
+            "formatted_plan": skew_baseline_plan,
+        },
+        "adaptive_skew_join": {
+            "settings": {
+                "adaptive_enabled": True,
+                "coalesce_partitions_enabled": False,
+                "skew_join_enabled": True,
+                "skewed_partition_factor": 2,
+                "skewed_partition_threshold": "8KB",
+                "force_optimize_skewed_join": True,
+                "advisory_partition_size": "64KB",
+                "auto_broadcast_join_threshold": -1,
+                "shuffle_partitions": 8,
+            },
+            "result": adaptive_skew_rows,
+            "features": plan_features(adaptive_skew_plan),
+            "formatted_plan": adaptive_skew_plan,
+        },
     }
 
 
@@ -170,6 +282,8 @@ def render_markdown(report: dict[str, object]) -> str:
         ("Baseline Sort-Merge Join", report["baseline_sort_merge"]),
         ("Explicit Broadcast Hash Join", report["explicit_broadcast"]),
         ("Adaptive aggregation", report["adaptive_aggregation"]),
+        ("Skewed Sort-Merge baseline", report["skew_baseline"]),
+        ("Adaptive skew join", report["adaptive_skew_join"]),
     ]
     lines = [
         "# Spark physical-plan evidence",

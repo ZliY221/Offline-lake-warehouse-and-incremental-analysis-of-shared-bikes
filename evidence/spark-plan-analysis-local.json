@@ -1,15 +1,18 @@
 {
   "adaptive_aggregation": {
     "features": {
-      "AQEShuffleRead": 0,
+      "AQEShuffleRead": 2,
       "AdaptiveSparkPlan": 2,
       "BroadcastExchange": 0,
       "BroadcastHashJoin": 0,
-      "Exchange": 6,
-      "SortMergeJoin": 2,
-      "coalesced": 0
+      "Exchange": 12,
+      "SortMergeJoin": 4,
+      "coalesced": 2,
+      "isFinalPlan=true": 1,
+      "skew=true": 0,
+      "skewed": 0
     },
-    "formatted_plan": "== Physical Plan ==\nAdaptiveSparkPlan (14)\n+- HashAggregate (13)\n   +- Exchange (12)\n      +- HashAggregate (11)\n         +- Project (10)\n            +- SortMergeJoin Inner (9)\n               :- Sort (4)\n               :  +- Exchange (3)\n               :     +- Project (2)\n               :        +- Range (1)\n               +- Sort (8)\n                  +- Exchange (7)\n                     +- Filter (6)\n                        +- Scan ExistingRDD (5)\n\n\n(1) Range\nOutput [1]: [id#<id>]\nArguments: Range (0, 1000, step=1, splits=Some(2))\n\n(2) Project\nOutput [1]: [format_string(ST-%03d, ((id#<id> % 8) + 1)) AS station_id#<id>]\nInput [1]: [id#<id>]\n\n(3) Exchange\nInput [1]: [station_id#<id>]\nArguments: hashpartitioning(station_id#<id>, 16), REPARTITION_BY_NUM, [plan_id=<id>]\n\n(4) Sort\nInput [1]: [station_id#<id>]\nArguments: [station_id#<id> ASC NULLS FIRST], false, 0\n\n(5) Scan ExistingRDD\nOutput [2]: [station_id#<id>, district#<id>]\nArguments: [station_id#<id>, district#<id>], MapPartitionsRDD[4] at applySchemaToPythonRDD at NativeMethodAccessorImpl.java:0, ExistingRDD, UnknownPartitioning(0)\n\n(6) Filter\nInput [2]: [station_id#<id>, district#<id>]\nCondition : isnotnull(station_id#<id>)\n\n(7) Exchange\nInput [2]: [station_id#<id>, district#<id>]\nArguments: hashpartitioning(station_id#<id>, 16), ENSURE_REQUIREMENTS, [plan_id=<id>]\n\n(8) Sort\nInput [2]: [station_id#<id>, district#<id>]\nArguments: [station_id#<id> ASC NULLS FIRST], false, 0\n\n(9) SortMergeJoin\nLeft keys [1]: [station_id#<id>]\nRight keys [1]: [station_id#<id>]\nJoin type: Inner\nJoin condition: None\n\n(10) Project\nOutput [1]: [district#<id>]\nInput [3]: [station_id#<id>, station_id#<id>, district#<id>]\n\n(11) HashAggregate\nInput [1]: [district#<id>]\nKeys [1]: [district#<id>]\nFunctions [1]: [partial_count(1)]\nAggregate Attributes [1]: [count#<id>]\nResults [2]: [district#<id>, count#<id>]\n\n(12) Exchange\nInput [2]: [district#<id>, count#<id>]\nArguments: hashpartitioning(district#<id>, 16), ENSURE_REQUIREMENTS, [plan_id=<id>]\n\n(13) HashAggregate\nInput [2]: [district#<id>, count#<id>]\nKeys [1]: [district#<id>]\nFunctions [1]: [count(1)]\nAggregate Attributes [1]: [count(1)#<id>]\nResults [2]: [district#<id>, count(1)#<id> AS trip_count#<id>]\n\n(14) AdaptiveSparkPlan\nOutput [2]: [district#<id>, trip_count#<id>]\nArguments: isFinalPlan=false",
+    "formatted_plan": "== Physical Plan ==\nAdaptiveSparkPlan (28)\n+- == Final Plan ==\n   ResultQueryStage (18)\n   +- * HashAggregate (17)\n      +- AQEShuffleRead (16), coalesced\n         +- ShuffleQueryStage (15), Statistics(sizeInBytes=320.0 B, rowCount=8)\n            +- Exchange (14)\n               +- * HashAggregate (13)\n                  +- * Project (12)\n                     +- * SortMergeJoin Inner (11)\n                        :- * Sort (5)\n                        :  +- ShuffleQueryStage (4), Statistics(sizeInBytes=23.4 KiB, rowCount=1.00E+3)\n                        :     +- Exchange (3)\n                        :        +- * Project (2)\n                        :           +- * Range (1)\n                        +- * Sort (10)\n                           +- ShuffleQueryStage (9), Statistics(sizeInBytes=384.0 B, rowCount=8)\n                              +- Exchange (8)\n                                 +- * Filter (7)\n                                    +- * Scan ExistingRDD (6)\n+- == Initial Plan ==\n   HashAggregate (27)\n   +- Exchange (26)\n      +- HashAggregate (25)\n         +- Project (24)\n            +- SortMergeJoin Inner (23)\n               :- Sort (20)\n               :  +- Exchange (19)\n               :     +- Project (2)\n               :        +- Range (1)\n               +- Sort (22)\n                  +- Exchange (21)\n                     +- Filter (7)\n                        +- Scan ExistingRDD (6)\n\n\n(1) Range [codegen id : 1]\nOutput [1]: [id#<id>]\nArguments: Range (0, 1000, step=1, splits=Some(2))\n\n(2) Project [codegen id : 1]\nOutput [1]: [format_string(ST-%03d, ((id#<id> % 8) + 1)) AS station_id#<id>]\nInput [1]: [id#<id>]\n\n(3) Exchange\nInput [1]: [station_id#<id>]\nArguments: hashpartitioning(station_id#<id>, 16), REPARTITION_BY_NUM, [plan_id=<id>]\n\n(4) ShuffleQueryStage\nOutput [1]: [station_id#<id>]\nArguments: 0\n\n(5) Sort [codegen id : 3]\nInput [1]: [station_id#<id>]\nArguments: [station_id#<id> ASC NULLS FIRST], false, 0\n\n(6) Scan ExistingRDD [codegen id : 2]\nOutput [2]: [station_id#<id>, district#<id>]\nArguments: [station_id#<id>, district#<id>], MapPartitionsRDD[4] at applySchemaToPythonRDD at NativeMethodAccessorImpl.java:0, ExistingRDD, UnknownPartitioning(0)\n\n(7) Filter [codegen id : 2]\nInput [2]: [station_id#<id>, district#<id>]\nCondition : isnotnull(station_id#<id>)\n\n(8) Exchange\nInput [2]: [station_id#<id>, district#<id>]\nArguments: hashpartitioning(station_id#<id>, 16), ENSURE_REQUIREMENTS, [plan_id=<id>]\n\n(9) ShuffleQueryStage\nOutput [2]: [station_id#<id>, district#<id>]\nArguments: 1\n\n(10) Sort [codegen id : 4]\nInput [2]: [station_id#<id>, district#<id>]\nArguments: [station_id#<id> ASC NULLS FIRST], false, 0\n\n(11) SortMergeJoin [codegen id : 5]\nLeft keys [1]: [station_id#<id>]\nRight keys [1]: [station_id#<id>]\nJoin type: Inner\nJoin condition: None\n\n(12) Project [codegen id : 5]\nOutput [1]: [district#<id>]\nInput [3]: [station_id#<id>, station_id#<id>, district#<id>]\n\n(13) HashAggregate [codegen id : 5]\nInput [1]: [district#<id>]\nKeys [1]: [district#<id>]\nFunctions [1]: [partial_count(1)]\nAggregate Attributes [1]: [count#<id>]\nResults [2]: [district#<id>, count#<id>]\n\n(14) Exchange\nInput [2]: [district#<id>, count#<id>]\nArguments: hashpartitioning(district#<id>, 16), ENSURE_REQUIREMENTS, [plan_id=<id>]\n\n(15) ShuffleQueryStage\nOutput [2]: [district#<id>, count#<id>]\nArguments: 2\n\n(16) AQEShuffleRead\nInput [2]: [district#<id>, count#<id>]\nArguments: coalesced\n\n(17) HashAggregate [codegen id : 6]\nInput [2]: [district#<id>, count#<id>]\nKeys [1]: [district#<id>]\nFunctions [1]: [count(1)]\nAggregate Attributes [1]: [count(1)#<id>]\nResults [2]: [district#<id>, count(1)#<id> AS trip_count#<id>]\n\n(18) ResultQueryStage\nOutput [2]: [district#<id>, trip_count#<id>]\nArguments: 3\n\n(19) Exchange\nInput [1]: [station_id#<id>]\nArguments: hashpartitioning(station_id#<id>, 16), REPARTITION_BY_NUM, [plan_id=<id>]\n\n(20) Sort\nInput [1]: [station_id#<id>]\nArguments: [station_id#<id> ASC NULLS FIRST], false, 0\n\n(21) Exchange\nInput [2]: [station_id#<id>, district#<id>]\nArguments: hashpartitioning(station_id#<id>, 16), ENSURE_REQUIREMENTS, [plan_id=<id>]\n\n(22) Sort\nInput [2]: [station_id#<id>, district#<id>]\nArguments: [station_id#<id> ASC NULLS FIRST], false, 0\n\n(23) SortMergeJoin\nLeft keys [1]: [station_id#<id>]\nRight keys [1]: [station_id#<id>]\nJoin type: Inner\nJoin condition: None\n\n(24) Project\nOutput [1]: [district#<id>]\nInput [3]: [station_id#<id>, station_id#<id>, district#<id>]\n\n(25) HashAggregate\nInput [1]: [district#<id>]\nKeys [1]: [district#<id>]\nFunctions [1]: [partial_count(1)]\nAggregate Attributes [1]: [count#<id>]\nResults [2]: [district#<id>, count#<id>]\n\n(26) Exchange\nInput [2]: [district#<id>, count#<id>]\nArguments: hashpartitioning(district#<id>, 16), ENSURE_REQUIREMENTS, [plan_id=<id>]\n\n(27) HashAggregate\nInput [2]: [district#<id>, count#<id>]\nKeys [1]: [district#<id>]\nFunctions [1]: [count(1)]\nAggregate Attributes [1]: [count(1)#<id>]\nResults [2]: [district#<id>, count(1)#<id> AS trip_count#<id>]\n\n(28) AdaptiveSparkPlan\nOutput [2]: [district#<id>, trip_count#<id>]\nArguments: isFinalPlan=true",
     "result": [
       {
         "district": "district-0",
@@ -31,6 +34,74 @@
       "initial_shuffle_partitions": 16
     }
   },
+  "adaptive_skew_join": {
+    "features": {
+      "AQEShuffleRead": 4,
+      "AdaptiveSparkPlan": 2,
+      "BroadcastExchange": 0,
+      "BroadcastHashJoin": 0,
+      "Exchange": 12,
+      "SortMergeJoin": 4,
+      "coalesced": 0,
+      "isFinalPlan=true": 1,
+      "skew=true": 2,
+      "skewed": 2
+    },
+    "formatted_plan": "== Physical Plan ==\nAdaptiveSparkPlan (30)\n+- == Final Plan ==\n   ResultQueryStage (20)\n   +- * HashAggregate (19)\n      +- ShuffleQueryStage (18), Statistics(sizeInBytes=432.0 B, rowCount=9)\n         +- Exchange (17)\n            +- * HashAggregate (16)\n               +- * Project (15)\n                  +- * SortMergeJoin(skew=true) Inner (14)\n                     :- * Sort (7)\n                     :  +- AQEShuffleRead (6), skewed\n                     :     +- ShuffleQueryStage (5), Statistics(sizeInBytes=1718.8 KiB, rowCount=2.00E+4)\n                     :        +- Exchange (4)\n                     :           +- * Project (3)\n                     :              +- * Filter (2)\n                     :                 +- * Range (1)\n                     +- * Sort (13)\n                        +- AQEShuffleRead (12)\n                           +- ShuffleQueryStage (11), Statistics(sizeInBytes=320.0 B, rowCount=8)\n                              +- Exchange (10)\n                                 +- * Filter (9)\n                                    +- * Scan ExistingRDD (8)\n+- == Initial Plan ==\n   HashAggregate (29)\n   +- Exchange (28)\n      +- HashAggregate (27)\n         +- Project (26)\n            +- SortMergeJoin Inner (25)\n               :- Sort (22)\n               :  +- Exchange (21)\n               :     +- Project (3)\n               :        +- Filter (2)\n               :           +- Range (1)\n               +- Sort (24)\n                  +- Exchange (23)\n                     +- Filter (9)\n                        +- Scan ExistingRDD (8)\n\n\n(1) Range [codegen id : 1]\nOutput [1]: [id#<id>]\nArguments: Range (0, 20000, step=1, splits=Some(2))\n\n(2) Filter [codegen id : 1]\nInput [1]: [id#<id>]\nCondition : CASE WHEN (id#<id> < 18000) THEN true ELSE isnotnull((((id#<id> - 18000) % 7) + 1)) END\n\n(3) Project [codegen id : 1]\nOutput [2]: [CASE WHEN (id#<id> < 18000) THEN 0 ELSE (((id#<id> - 18000) % 7) + 1) END AS station_key#<id>, sha2(cast(concat_ws(-, cast(id#<id> as string), skew-evidence) as binary), 256) AS payload#<id>]\nInput [1]: [id#<id>]\n\n(4) Exchange\nInput [2]: [station_key#<id>, payload#<id>]\nArguments: hashpartitioning(station_key#<id>, 8), ENSURE_REQUIREMENTS, [plan_id=<id>]\n\n(5) ShuffleQueryStage\nOutput [2]: [station_key#<id>, payload#<id>]\nArguments: 0\n\n(6) AQEShuffleRead\nInput [2]: [station_key#<id>, payload#<id>]\nArguments: skewed\n\n(7) Sort [codegen id : 3]\nInput [2]: [station_key#<id>, payload#<id>]\nArguments: [station_key#<id> ASC NULLS FIRST], false, 0\n\n(8) Scan ExistingRDD [codegen id : 2]\nOutput [2]: [station_key#<id>, district#<id>]\nArguments: [station_key#<id>, district#<id>], MapPartitionsRDD[50] at applySchemaToPythonRDD at NativeMethodAccessorImpl.java:0, ExistingRDD, UnknownPartitioning(0)\n\n(9) Filter [codegen id : 2]\nInput [2]: [station_key#<id>, district#<id>]\nCondition : isnotnull(station_key#<id>)\n\n(10) Exchange\nInput [2]: [station_key#<id>, district#<id>]\nArguments: hashpartitioning(station_key#<id>, 8), ENSURE_REQUIREMENTS, [plan_id=<id>]\n\n(11) ShuffleQueryStage\nOutput [2]: [station_key#<id>, district#<id>]\nArguments: 1\n\n(12) AQEShuffleRead\nInput [2]: [station_key#<id>, district#<id>]\n\n(13) Sort [codegen id : 4]\nInput [2]: [station_key#<id>, district#<id>]\nArguments: [station_key#<id> ASC NULLS FIRST], false, 0\n\n(14) SortMergeJoin(skew=true) [codegen id : 5]\nLeft keys [1]: [station_key#<id>]\nRight keys [1]: [station_key#<id>]\nJoin type: Inner\nJoin condition: None\n\n(15) Project [codegen id : 5]\nOutput [2]: [payload#<id>, district#<id>]\nInput [4]: [station_key#<id>, payload#<id>, station_key#<id>, district#<id>]\n\n(16) HashAggregate [codegen id : 5]\nInput [2]: [payload#<id>, district#<id>]\nKeys [1]: [district#<id>]\nFunctions [2]: [partial_count(1), partial_sum(length(payload#<id>))]\nAggregate Attributes [2]: [count#<id>, sum#<id>]\nResults [3]: [district#<id>, count#<id>, sum#<id>]\n\n(17) Exchange\nInput [3]: [district#<id>, count#<id>, sum#<id>]\nArguments: hashpartitioning(district#<id>, 8), ENSURE_REQUIREMENTS, [plan_id=<id>]\n\n(18) ShuffleQueryStage\nOutput [3]: [district#<id>, count#<id>, sum#<id>]\nArguments: 2\n\n(19) HashAggregate [codegen id : 6]\nInput [3]: [district#<id>, count#<id>, sum#<id>]\nKeys [1]: [district#<id>]\nFunctions [2]: [count(1), sum(length(payload#<id>))]\nAggregate Attributes [2]: [count(1)#<id>, sum(length(payload#<id>))#<id>]\nResults [3]: [district#<id>, count(1)#<id> AS trip_count#<id>, sum(length(payload#<id>))#<id> AS payload_characters#<id>]\n\n(20) ResultQueryStage\nOutput [3]: [district#<id>, trip_count#<id>, payload_characters#<id>]\nArguments: 3\n\n(21) Exchange\nInput [2]: [station_key#<id>, payload#<id>]\nArguments: hashpartitioning(station_key#<id>, 8), ENSURE_REQUIREMENTS, [plan_id=<id>]\n\n(22) Sort\nInput [2]: [station_key#<id>, payload#<id>]\nArguments: [station_key#<id> ASC NULLS FIRST], false, 0\n\n(23) Exchange\nInput [2]: [station_key#<id>, district#<id>]\nArguments: hashpartitioning(station_key#<id>, 8), ENSURE_REQUIREMENTS, [plan_id=<id>]\n\n(24) Sort\nInput [2]: [station_key#<id>, district#<id>]\nArguments: [station_key#<id> ASC NULLS FIRST], false, 0\n\n(25) SortMergeJoin\nLeft keys [1]: [station_key#<id>]\nRight keys [1]: [station_key#<id>]\nJoin type: Inner\nJoin condition: None\n\n(26) Project\nOutput [2]: [payload#<id>, district#<id>]\nInput [4]: [station_key#<id>, payload#<id>, station_key#<id>, district#<id>]\n\n(27) HashAggregate\nInput [2]: [payload#<id>, district#<id>]\nKeys [1]: [district#<id>]\nFunctions [2]: [partial_count(1), partial_sum(length(payload#<id>))]\nAggregate Attributes [2]: [count#<id>, sum#<id>]\nResults [3]: [district#<id>, count#<id>, sum#<id>]\n\n(28) Exchange\nInput [3]: [district#<id>, count#<id>, sum#<id>]\nArguments: hashpartitioning(district#<id>, 8), ENSURE_REQUIREMENTS, [plan_id=<id>]\n\n(29) HashAggregate\nInput [3]: [district#<id>, count#<id>, sum#<id>]\nKeys [1]: [district#<id>]\nFunctions [2]: [count(1), sum(length(payload#<id>))]\nAggregate Attributes [2]: [count(1)#<id>, sum(length(payload#<id>))#<id>]\nResults [3]: [district#<id>, count(1)#<id> AS trip_count#<id>, sum(length(payload#<id>))#<id> AS payload_characters#<id>]\n\n(30) AdaptiveSparkPlan\nOutput [3]: [district#<id>, trip_count#<id>, payload_characters#<id>]\nArguments: isFinalPlan=true",
+    "result": [
+      {
+        "district": "district-0",
+        "payload_characters": 1152000,
+        "trip_count": 18000
+      },
+      {
+        "district": "district-1",
+        "payload_characters": 18304,
+        "trip_count": 286
+      },
+      {
+        "district": "district-2",
+        "payload_characters": 18304,
+        "trip_count": 286
+      },
+      {
+        "district": "district-3",
+        "payload_characters": 18304,
+        "trip_count": 286
+      },
+      {
+        "district": "district-4",
+        "payload_characters": 18304,
+        "trip_count": 286
+      },
+      {
+        "district": "district-5",
+        "payload_characters": 18304,
+        "trip_count": 286
+      },
+      {
+        "district": "district-6",
+        "payload_characters": 18240,
+        "trip_count": 285
+      },
+      {
+        "district": "district-7",
+        "payload_characters": 18240,
+        "trip_count": 285
+      }
+    ],
+    "settings": {
+      "adaptive_enabled": true,
+      "advisory_partition_size": "64KB",
+      "auto_broadcast_join_threshold": -1,
+      "coalesce_partitions_enabled": false,
+      "force_optimize_skewed_join": true,
+      "shuffle_partitions": 8,
+      "skew_join_enabled": true,
+      "skewed_partition_factor": 2,
+      "skewed_partition_threshold": "8KB"
+    }
+  },
   "baseline_sort_merge": {
     "features": {
       "AQEShuffleRead": 0,
@@ -39,7 +110,10 @@
       "BroadcastHashJoin": 0,
       "Exchange": 6,
       "SortMergeJoin": 2,
-      "coalesced": 0
+      "coalesced": 0,
+      "isFinalPlan=true": 0,
+      "skew=true": 0,
+      "skewed": 0
     },
     "formatted_plan": "== Physical Plan ==\n* HashAggregate (13)\n+- Exchange (12)\n   +- * HashAggregate (11)\n      +- * Project (10)\n         +- * SortMergeJoin Inner (9)\n            :- * Sort (4)\n            :  +- Exchange (3)\n            :     +- * Project (2)\n            :        +- * Range (1)\n            +- * Sort (8)\n               +- Exchange (7)\n                  +- * Filter (6)\n                     +- * Scan ExistingRDD (5)\n\n\n(1) Range [codegen id : 1]\nOutput [1]: [id#<id>]\nArguments: Range (0, 1000, step=1, splits=Some(2))\n\n(2) Project [codegen id : 1]\nOutput [2]: [format_string(ST-%03d, ((id#<id> % 8) + 1)) AS station_id#<id>, ((id#<id> % 17) + 1) AS trip_minutes#<id>]\nInput [1]: [id#<id>]\n\n(3) Exchange\nInput [2]: [station_id#<id>, trip_minutes#<id>]\nArguments: hashpartitioning(station_id#<id>, 8), ENSURE_REQUIREMENTS, [plan_id=<id>]\n\n(4) Sort [codegen id : 2]\nInput [2]: [station_id#<id>, trip_minutes#<id>]\nArguments: [station_id#<id> ASC NULLS FIRST], false, 0\n\n(5) Scan ExistingRDD [codegen id : 3]\nOutput [2]: [station_id#<id>, district#<id>]\nArguments: [station_id#<id>, district#<id>], MapPartitionsRDD[4] at applySchemaToPythonRDD at NativeMethodAccessorImpl.java:0, ExistingRDD, UnknownPartitioning(0)\n\n(6) Filter [codegen id : 3]\nInput [2]: [station_id#<id>, district#<id>]\nCondition : isnotnull(station_id#<id>)\n\n(7) Exchange\nInput [2]: [station_id#<id>, district#<id>]\nArguments: hashpartitioning(station_id#<id>, 8), ENSURE_REQUIREMENTS, [plan_id=<id>]\n\n(8) Sort [codegen id : 4]\nInput [2]: [station_id#<id>, district#<id>]\nArguments: [station_id#<id> ASC NULLS FIRST], false, 0\n\n(9) SortMergeJoin [codegen id : 5]\nLeft keys [1]: [station_id#<id>]\nRight keys [1]: [station_id#<id>]\nJoin type: Inner\nJoin condition: None\n\n(10) Project [codegen id : 5]\nOutput [2]: [trip_minutes#<id>, district#<id>]\nInput [4]: [station_id#<id>, trip_minutes#<id>, station_id#<id>, district#<id>]\n\n(11) HashAggregate [codegen id : 5]\nInput [2]: [trip_minutes#<id>, district#<id>]\nKeys [1]: [district#<id>]\nFunctions [2]: [partial_count(1), partial_sum(trip_minutes#<id>)]\nAggregate Attributes [2]: [count#<id>, sum#<id>]\nResults [3]: [district#<id>, count#<id>, sum#<id>]\n\n(12) Exchange\nInput [3]: [district#<id>, count#<id>, sum#<id>]\nArguments: hashpartitioning(district#<id>, 8), ENSURE_REQUIREMENTS, [plan_id=<id>]\n\n(13) HashAggregate [codegen id : 6]\nInput [3]: [district#<id>, count#<id>, sum#<id>]\nKeys [1]: [district#<id>]\nFunctions [2]: [count(1), sum(trip_minutes#<id>)]\nAggregate Attributes [2]: [count(1)#<id>, sum(trip_minutes#<id>)#<id>]\nResults [3]: [district#<id>, count(1)#<id> AS trip_count#<id>, sum(trip_minutes#<id>)#<id> AS total_trip_minutes#<id>]",
     "result": [
@@ -80,7 +154,10 @@
       "BroadcastHashJoin": 2,
       "Exchange": 4,
       "SortMergeJoin": 0,
-      "coalesced": 0
+      "coalesced": 0,
+      "isFinalPlan=true": 0,
+      "skew=true": 0,
+      "skewed": 0
     },
     "formatted_plan": "== Physical Plan ==\n* HashAggregate (10)\n+- Exchange (9)\n   +- * HashAggregate (8)\n      +- * Project (7)\n         +- * BroadcastHashJoin Inner BuildRight (6)\n            :- * Project (2)\n            :  +- * Range (1)\n            +- BroadcastExchange (5)\n               +- * Filter (4)\n                  +- * Scan ExistingRDD (3)\n\n\n(1) Range [codegen id : 2]\nOutput [1]: [id#<id>]\nArguments: Range (0, 1000, step=1, splits=Some(2))\n\n(2) Project [codegen id : 2]\nOutput [2]: [format_string(ST-%03d, ((id#<id> % 8) + 1)) AS station_id#<id>, ((id#<id> % 17) + 1) AS trip_minutes#<id>]\nInput [1]: [id#<id>]\n\n(3) Scan ExistingRDD [codegen id : 1]\nOutput [2]: [station_id#<id>, district#<id>]\nArguments: [station_id#<id>, district#<id>], MapPartitionsRDD[4] at applySchemaToPythonRDD at NativeMethodAccessorImpl.java:0, ExistingRDD, UnknownPartitioning(0)\n\n(4) Filter [codegen id : 1]\nInput [2]: [station_id#<id>, district#<id>]\nCondition : isnotnull(station_id#<id>)\n\n(5) BroadcastExchange\nInput [2]: [station_id#<id>, district#<id>]\nArguments: HashedRelationBroadcastMode(List(input[0, string, false]),false), [plan_id=<id>]\n\n(6) BroadcastHashJoin [codegen id : 2]\nLeft keys [1]: [station_id#<id>]\nRight keys [1]: [station_id#<id>]\nJoin type: Inner\nJoin condition: None\n\n(7) Project [codegen id : 2]\nOutput [2]: [trip_minutes#<id>, district#<id>]\nInput [4]: [station_id#<id>, trip_minutes#<id>, station_id#<id>, district#<id>]\n\n(8) HashAggregate [codegen id : 2]\nInput [2]: [trip_minutes#<id>, district#<id>]\nKeys [1]: [district#<id>]\nFunctions [2]: [partial_count(1), partial_sum(trip_minutes#<id>)]\nAggregate Attributes [2]: [count#<id>, sum#<id>]\nResults [3]: [district#<id>, count#<id>, sum#<id>]\n\n(9) Exchange\nInput [3]: [district#<id>, count#<id>, sum#<id>]\nArguments: hashpartitioning(district#<id>, 8), ENSURE_REQUIREMENTS, [plan_id=<id>]\n\n(10) HashAggregate [codegen id : 3]\nInput [3]: [district#<id>, count#<id>, sum#<id>]\nKeys [1]: [district#<id>]\nFunctions [2]: [count(1), sum(trip_minutes#<id>)]\nAggregate Attributes [2]: [count(1)#<id>, sum(trip_minutes#<id>)#<id>]\nResults [3]: [district#<id>, count(1)#<id> AS trip_count#<id>, sum(trip_minutes#<id>)#<id> AS total_trip_minutes#<id>]",
     "result": [
@@ -106,11 +183,80 @@
       "shuffle_partitions": 8
     }
   },
-  "generated_at_utc": "2026-10-05T01:49:43Z",
+  "generated_at_utc": "2026-10-05T02:15:59Z",
   "input": {
     "dimension_rows": 8,
     "fact_rows": 1000,
     "station_keys": 8
   },
-  "report_version": "1.0"
+  "report_version": "1.0",
+  "skew_baseline": {
+    "features": {
+      "AQEShuffleRead": 0,
+      "AdaptiveSparkPlan": 0,
+      "BroadcastExchange": 0,
+      "BroadcastHashJoin": 0,
+      "Exchange": 6,
+      "SortMergeJoin": 2,
+      "coalesced": 0,
+      "isFinalPlan=true": 0,
+      "skew=true": 0,
+      "skewed": 0
+    },
+    "formatted_plan": "== Physical Plan ==\n* HashAggregate (14)\n+- Exchange (13)\n   +- * HashAggregate (12)\n      +- * Project (11)\n         +- * SortMergeJoin Inner (10)\n            :- * Sort (5)\n            :  +- Exchange (4)\n            :     +- * Project (3)\n            :        +- * Filter (2)\n            :           +- * Range (1)\n            +- * Sort (9)\n               +- Exchange (8)\n                  +- * Filter (7)\n                     +- * Scan ExistingRDD (6)\n\n\n(1) Range [codegen id : 1]\nOutput [1]: [id#<id>]\nArguments: Range (0, 20000, step=1, splits=Some(2))\n\n(2) Filter [codegen id : 1]\nInput [1]: [id#<id>]\nCondition : CASE WHEN (id#<id> < 18000) THEN true ELSE isnotnull((((id#<id> - 18000) % 7) + 1)) END\n\n(3) Project [codegen id : 1]\nOutput [2]: [CASE WHEN (id#<id> < 18000) THEN 0 ELSE (((id#<id> - 18000) % 7) + 1) END AS station_key#<id>, sha2(cast(concat_ws(-, cast(id#<id> as string), skew-evidence) as binary), 256) AS payload#<id>]\nInput [1]: [id#<id>]\n\n(4) Exchange\nInput [2]: [station_key#<id>, payload#<id>]\nArguments: hashpartitioning(station_key#<id>, 8), ENSURE_REQUIREMENTS, [plan_id=<id>]\n\n(5) Sort [codegen id : 2]\nInput [2]: [station_key#<id>, payload#<id>]\nArguments: [station_key#<id> ASC NULLS FIRST], false, 0\n\n(6) Scan ExistingRDD [codegen id : 3]\nOutput [2]: [station_key#<id>, district#<id>]\nArguments: [station_key#<id>, district#<id>], MapPartitionsRDD[50] at applySchemaToPythonRDD at NativeMethodAccessorImpl.java:0, ExistingRDD, UnknownPartitioning(0)\n\n(7) Filter [codegen id : 3]\nInput [2]: [station_key#<id>, district#<id>]\nCondition : isnotnull(station_key#<id>)\n\n(8) Exchange\nInput [2]: [station_key#<id>, district#<id>]\nArguments: hashpartitioning(station_key#<id>, 8), ENSURE_REQUIREMENTS, [plan_id=<id>]\n\n(9) Sort [codegen id : 4]\nInput [2]: [station_key#<id>, district#<id>]\nArguments: [station_key#<id> ASC NULLS FIRST], false, 0\n\n(10) SortMergeJoin [codegen id : 5]\nLeft keys [1]: [station_key#<id>]\nRight keys [1]: [station_key#<id>]\nJoin type: Inner\nJoin condition: None\n\n(11) Project [codegen id : 5]\nOutput [2]: [payload#<id>, district#<id>]\nInput [4]: [station_key#<id>, payload#<id>, station_key#<id>, district#<id>]\n\n(12) HashAggregate [codegen id : 5]\nInput [2]: [payload#<id>, district#<id>]\nKeys [1]: [district#<id>]\nFunctions [2]: [partial_count(1), partial_sum(length(payload#<id>))]\nAggregate Attributes [2]: [count#<id>, sum#<id>]\nResults [3]: [district#<id>, count#<id>, sum#<id>]\n\n(13) Exchange\nInput [3]: [district#<id>, count#<id>, sum#<id>]\nArguments: hashpartitioning(district#<id>, 8), ENSURE_REQUIREMENTS, [plan_id=<id>]\n\n(14) HashAggregate [codegen id : 6]\nInput [3]: [district#<id>, count#<id>, sum#<id>]\nKeys [1]: [district#<id>]\nFunctions [2]: [count(1), sum(length(payload#<id>))]\nAggregate Attributes [2]: [count(1)#<id>, sum(length(payload#<id>))#<id>]\nResults [3]: [district#<id>, count(1)#<id> AS trip_count#<id>, sum(length(payload#<id>))#<id> AS payload_characters#<id>]",
+    "result": [
+      {
+        "district": "district-0",
+        "payload_characters": 1152000,
+        "trip_count": 18000
+      },
+      {
+        "district": "district-1",
+        "payload_characters": 18304,
+        "trip_count": 286
+      },
+      {
+        "district": "district-2",
+        "payload_characters": 18304,
+        "trip_count": 286
+      },
+      {
+        "district": "district-3",
+        "payload_characters": 18304,
+        "trip_count": 286
+      },
+      {
+        "district": "district-4",
+        "payload_characters": 18304,
+        "trip_count": 286
+      },
+      {
+        "district": "district-5",
+        "payload_characters": 18304,
+        "trip_count": 286
+      },
+      {
+        "district": "district-6",
+        "payload_characters": 18240,
+        "trip_count": 285
+      },
+      {
+        "district": "district-7",
+        "payload_characters": 18240,
+        "trip_count": 285
+      }
+    ],
+    "settings": {
+      "adaptive_enabled": false,
+      "auto_broadcast_join_threshold": -1,
+      "shuffle_partitions": 8
+    }
+  },
+  "skew_input": {
+    "fact_rows": 20000,
+    "hot_key": 0,
+    "hot_key_ratio": 0.9,
+    "hot_key_rows": 18000,
+    "other_keys": 7
+  }
 }
