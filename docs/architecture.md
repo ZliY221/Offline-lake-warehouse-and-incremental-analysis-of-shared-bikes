@@ -60,10 +60,12 @@ Bronze 与回填先写 `RUNNING` 控制记录，成功转为 `SUCCEEDED`，异�
 ## 可验证入口
 
 - `scripts/run-portfolio-demo.ps1`：隔离目录内重建全部层、执行质量门禁和测试；
-- `scripts/test-all.ps1`：运行 25 项自动化测试；
+- `scripts/test-all.ps1`：运行 28 项自动化测试；
 - `scripts/run-benchmark.ps1`：1 轮预热加 3 轮本机性能测量；
 - `scripts/explain-spark-plans.ps1`：对比 Sort-Merge、Broadcast Hash Join、AQE 分区合并与倾斜 Join 最终物理计划；
 - `scripts/explain-spark-stage-metrics.ps1`：从实时 Spark UI REST 接口保存 Job、Stage 和 Task 指标；
+- `scripts/run-managed-pipeline.ps1`：运行真实五阶段依赖图，支持限定重试、失败注入和断点恢复；
 - `evidence/benchmark-10000-local.json`：保存环境、输入指纹和逐轮原始结果。
 - `evidence/spark-plan-analysis-local.*`：保存归一化计划、算子计数、设置和等价结果。
 - `evidence/spark-stage-metrics-local.*`：保存 Shuffle、执行时间、GC、Spill 和逐任务分布。
+- `evidence/orchestration-retry-local.*`：保存每次尝试、日志哈希、重试事件和恢复跳过证据。

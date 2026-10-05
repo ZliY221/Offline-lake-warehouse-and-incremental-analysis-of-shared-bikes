@@ -25,6 +25,7 @@
 - [x] 完成 Sort-Merge Join、显式 Broadcast Hash Join 与 AQE 的真实格式化物理计划证据。
 - [x] 构造 90% 热点键倾斜场景，验证 AQE 最终计划的分区合并与倾斜 Join 拆分。
 - [x] 通过 Spark UI `/api/v1` 保存 Job、Stage 和 Task 级 Shuffle、耗时、GC 与 Spill 指标。
+- [x] 使用真实五阶段 Spark 链路验证依赖编排、失败重试、日志哈希与断点恢复。
 
 ## 为什么单独建仓
 
@@ -184,7 +185,7 @@ Gold 先按行程业务日期分别关联起点、终点在当日有效的 SCD2 
 ./scripts/test-all.ps1
 ```
 
-当前 25 项测试覆盖确定性、契约、金额/时间边界、匿名键格式与隐私字段、显式 Spark Schema、Parquet 类型、同分区幂等重跑、跨日期分区保留、确定性批次清单、状态与失败记录、单日期回填预检、跨分区主键写前保护、非目标分区文件哈希不变、cohort 旧新归属日期传播、质量失败、精确/冲突重复、派生字段、空输出 Schema、Silver 完整重建幂等、站点 SCD2、Gold 时态关联与留存、真实 Spark 物理计划，以及 Spark UI REST 的 Job/Stage/Task 指标采集。
+当前 28 项测试覆盖确定性、契约、金额/时间边界、匿名键格式与隐私字段、显式 Spark Schema、Parquet 类型、同分区幂等重跑、跨日期分区保留、批次状态与失败记录、单日期回填、跨分区主键保护、cohort 依赖传播、质量分流、SCD2、Gold 时态关联与留存、真实 Spark 物理计划、Spark UI REST 指标，以及任务依赖、重试、恢复和任务图校验。
 
 ## Spark 执行计划证据
 
@@ -206,13 +207,33 @@ Gold 先按行程业务日期分别关联起点、终点在当日有效的 SCD2 
 
 当前仓库位于包含中文的 Windows 路径，Spark 4.2 的 Jetty 静态资源加载会打印 `Bad escape` 告警，但已实测 `/api/v1` JSON 指标接口可用；因此仓库保存的是 REST 原始指标，不把本机静态网页截图作为证据。
 
+## 作业编排、重试与恢复
+
+```powershell
+# 受控演示：Silver 第一次故意失败，第二次自动重试
+./scripts/run-managed-pipeline.ps1 `
+  -RunRoot build/managed-pipeline-evidence `
+  -RunId retry-evidence-20261005 `
+  -InjectFailureOnce silver
+
+# 对同一状态执行恢复，已成功任务不会重跑
+./scripts/run-managed-pipeline.ps1 `
+  -RunRoot build/managed-pipeline-evidence `
+  -RunId retry-evidence-20261005 `
+  -Resume
+```
+
+编排图为 Bronze → Silver、独立站点 SCD2、Silver + SCD2 → Gold、Gold → 质量门禁。运行清单在每次状态变化后原子落盘，并为每次尝试保存退出码、相对日志路径和 SHA-256。真实证据中 Silver 第一次以受控退出码 75 失败，第二次成功；Bronze、站点维表、Gold 和质量门禁均只执行一次。随后恢复运行跳过全部5个成功任务，任务尝试次数保持不变。证据见 [`evidence/orchestration-retry-local.json`](evidence/orchestration-retry-local.json) 和 [`evidence/orchestration-retry-local.md`](evidence/orchestration-retry-local.md)。
+
+这是单机、进程级的可迁移编排核心，用于证明依赖、重试、恢复和审计语义；它不是 Airflow/Dagster 部署，也不冒充分布式调度控制面。
+
 ## 一键作品集验收
 
 ```powershell
 ./scripts/run-portfolio-demo.ps1
 ```
 
-脚本使用隔离的 `build/portfolio-demo/` 输出目录，依次重建所有数据层、执行 6 项跨层质量门禁、验证 Spark 物理计划并运行包含 UI REST 采集的全部测试，最终输出机器可读摘要。架构、数据粒度和约束见 [`docs/architecture.md`](docs/architecture.md)，面试讲解与追问准备见 [`docs/interview-guide.md`](docs/interview-guide.md)，公开仓库与远程 CI 的验收证据见 [`docs/publishing-checklist.md`](docs/publishing-checklist.md)。
+脚本使用隔离的 `build/portfolio-demo/` 输出目录，依次重建所有数据层、执行 6 项跨层质量门禁、验证 Spark 物理计划并运行包含 UI REST 与编排语义的全部测试，最终输出机器可读摘要。架构、数据粒度和约束见 [`docs/architecture.md`](docs/architecture.md)，面试讲解与追问准备见 [`docs/interview-guide.md`](docs/interview-guide.md)，公开仓库与远程 CI 的验收证据见 [`docs/publishing-checklist.md`](docs/publishing-checklist.md)。
 
 ## 当前边界
 

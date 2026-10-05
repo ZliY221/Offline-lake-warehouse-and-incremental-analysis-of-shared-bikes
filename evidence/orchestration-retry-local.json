@@ -1,0 +1,288 @@
+{
+  "claims_boundary": "This manifest proves local dependency, retry, log hashing and resume behavior. It is not evidence of a production scheduler or distributed control plane.",
+  "created_at_utc": "2026-10-05T08:12:57Z",
+  "events": [
+    {
+      "at_utc": "2026-10-05T08:12:57Z",
+      "attempt": null,
+      "event": "PIPELINE_STARTED",
+      "sequence": 1,
+      "task": null
+    },
+    {
+      "at_utc": "2026-10-05T08:12:57Z",
+      "attempt": 1,
+      "event": "TASK_STARTED",
+      "sequence": 2,
+      "task": "bronze"
+    },
+    {
+      "at_utc": "2026-10-05T08:13:22Z",
+      "attempt": 1,
+      "event": "TASK_SUCCEEDED",
+      "sequence": 3,
+      "task": "bronze"
+    },
+    {
+      "at_utc": "2026-10-05T08:13:22Z",
+      "attempt": 1,
+      "event": "TASK_STARTED",
+      "sequence": 4,
+      "task": "silver"
+    },
+    {
+      "at_utc": "2026-10-05T08:13:22Z",
+      "attempt": 1,
+      "event": "TASK_RETRY_SCHEDULED",
+      "sequence": 5,
+      "task": "silver"
+    },
+    {
+      "at_utc": "2026-10-05T08:13:22Z",
+      "attempt": 2,
+      "event": "TASK_STARTED",
+      "sequence": 6,
+      "task": "silver"
+    },
+    {
+      "at_utc": "2026-10-05T08:13:53Z",
+      "attempt": 2,
+      "event": "TASK_SUCCEEDED",
+      "sequence": 7,
+      "task": "silver"
+    },
+    {
+      "at_utc": "2026-10-05T08:13:53Z",
+      "attempt": 1,
+      "event": "TASK_STARTED",
+      "sequence": 8,
+      "task": "station_dimension"
+    },
+    {
+      "at_utc": "2026-10-05T08:14:23Z",
+      "attempt": 1,
+      "event": "TASK_SUCCEEDED",
+      "sequence": 9,
+      "task": "station_dimension"
+    },
+    {
+      "at_utc": "2026-10-05T08:14:23Z",
+      "attempt": 1,
+      "event": "TASK_STARTED",
+      "sequence": 10,
+      "task": "gold"
+    },
+    {
+      "at_utc": "2026-10-05T08:14:54Z",
+      "attempt": 1,
+      "event": "TASK_SUCCEEDED",
+      "sequence": 11,
+      "task": "gold"
+    },
+    {
+      "at_utc": "2026-10-05T08:14:55Z",
+      "attempt": 1,
+      "event": "TASK_STARTED",
+      "sequence": 12,
+      "task": "quality_gate"
+    },
+    {
+      "at_utc": "2026-10-05T08:15:23Z",
+      "attempt": 1,
+      "event": "TASK_SUCCEEDED",
+      "sequence": 13,
+      "task": "quality_gate"
+    },
+    {
+      "at_utc": "2026-10-05T08:15:23Z",
+      "attempt": null,
+      "event": "PIPELINE_SUCCEEDED",
+      "sequence": 14,
+      "task": null
+    },
+    {
+      "at_utc": "2026-10-05T08:15:44Z",
+      "attempt": null,
+      "event": "PIPELINE_STARTED",
+      "sequence": 15,
+      "task": null
+    },
+    {
+      "at_utc": "2026-10-05T08:15:44Z",
+      "attempt": null,
+      "event": "TASK_RESUME_SKIPPED",
+      "sequence": 16,
+      "task": "bronze"
+    },
+    {
+      "at_utc": "2026-10-05T08:15:44Z",
+      "attempt": null,
+      "event": "TASK_RESUME_SKIPPED",
+      "sequence": 17,
+      "task": "silver"
+    },
+    {
+      "at_utc": "2026-10-05T08:15:45Z",
+      "attempt": null,
+      "event": "TASK_RESUME_SKIPPED",
+      "sequence": 18,
+      "task": "station_dimension"
+    },
+    {
+      "at_utc": "2026-10-05T08:15:45Z",
+      "attempt": null,
+      "event": "TASK_RESUME_SKIPPED",
+      "sequence": 19,
+      "task": "gold"
+    },
+    {
+      "at_utc": "2026-10-05T08:15:45Z",
+      "attempt": null,
+      "event": "TASK_RESUME_SKIPPED",
+      "sequence": 20,
+      "task": "quality_gate"
+    },
+    {
+      "at_utc": "2026-10-05T08:15:45Z",
+      "attempt": null,
+      "event": "PIPELINE_SUCCEEDED",
+      "sequence": 21,
+      "task": null
+    }
+  ],
+  "pipeline_name": "bike-trip-lakehouse-full-build",
+  "report_version": "1.0",
+  "resume_count": 1,
+  "run_id": "retry-resume-evidence-20261005",
+  "status": "SUCCEEDED",
+  "task_graph_sha256": "73df84576e1ac4604c8f29688f66ed6d8229719d1b09455cbee8af9a285b3446",
+  "tasks": {
+    "bronze": {
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "exit_code": 0,
+          "finished_at_utc": "2026-10-05T08:13:22Z",
+          "log_path": "build/managed-pipeline-evidence-v2/logs/bronze-attempt-1.log",
+          "log_sha256": "2afa2ae80f29067ab3e9b7b7e92606cec69cf3b5be6a164c57a70849704aa8b7",
+          "started_at_utc": "2026-10-05T08:12:57Z",
+          "status": "SUCCEEDED"
+        }
+      ],
+      "attempts": 1,
+      "dependencies": [],
+      "finished_at_utc": "2026-10-05T08:13:22Z",
+      "last_exit_code": 0,
+      "last_log_path": "build/managed-pipeline-evidence-v2/logs/bronze-attempt-1.log",
+      "last_log_sha256": "2afa2ae80f29067ab3e9b7b7e92606cec69cf3b5be6a164c57a70849704aa8b7",
+      "max_attempts_per_invocation": 2,
+      "started_at_utc": "2026-10-05T08:12:57Z",
+      "status": "SUCCEEDED"
+    },
+    "gold": {
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "exit_code": 0,
+          "finished_at_utc": "2026-10-05T08:14:54Z",
+          "log_path": "build/managed-pipeline-evidence-v2/logs/gold-attempt-1.log",
+          "log_sha256": "af1702827324c0c5320cc6ae37c9493b72db60f88cf5f990c4b1fc4237455363",
+          "started_at_utc": "2026-10-05T08:14:23Z",
+          "status": "SUCCEEDED"
+        }
+      ],
+      "attempts": 1,
+      "dependencies": [
+        "silver",
+        "station_dimension"
+      ],
+      "finished_at_utc": "2026-10-05T08:14:54Z",
+      "last_exit_code": 0,
+      "last_log_path": "build/managed-pipeline-evidence-v2/logs/gold-attempt-1.log",
+      "last_log_sha256": "af1702827324c0c5320cc6ae37c9493b72db60f88cf5f990c4b1fc4237455363",
+      "max_attempts_per_invocation": 2,
+      "started_at_utc": "2026-10-05T08:14:23Z",
+      "status": "SUCCEEDED"
+    },
+    "quality_gate": {
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "exit_code": 0,
+          "finished_at_utc": "2026-10-05T08:15:23Z",
+          "log_path": "build/managed-pipeline-evidence-v2/logs/quality_gate-attempt-1.log",
+          "log_sha256": "09cce1275f2c0a4dbe080b607d6ada5b5b683fc42e96fe99f7bacf22a96bdc52",
+          "started_at_utc": "2026-10-05T08:14:55Z",
+          "status": "SUCCEEDED"
+        }
+      ],
+      "attempts": 1,
+      "dependencies": [
+        "gold"
+      ],
+      "finished_at_utc": "2026-10-05T08:15:23Z",
+      "last_exit_code": 0,
+      "last_log_path": "build/managed-pipeline-evidence-v2/logs/quality_gate-attempt-1.log",
+      "last_log_sha256": "09cce1275f2c0a4dbe080b607d6ada5b5b683fc42e96fe99f7bacf22a96bdc52",
+      "max_attempts_per_invocation": 2,
+      "started_at_utc": "2026-10-05T08:14:55Z",
+      "status": "SUCCEEDED"
+    },
+    "silver": {
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "exit_code": 75,
+          "finished_at_utc": "2026-10-05T08:13:22Z",
+          "log_path": "build/managed-pipeline-evidence-v2/logs/silver-attempt-1.log",
+          "log_sha256": "0918f6e2da4bb301dad1a9b1b874cbed88234d6b15912c8a800fedd7af99e913",
+          "started_at_utc": "2026-10-05T08:13:22Z",
+          "status": "FAILED"
+        },
+        {
+          "attempt": 2,
+          "exit_code": 0,
+          "finished_at_utc": "2026-10-05T08:13:53Z",
+          "log_path": "build/managed-pipeline-evidence-v2/logs/silver-attempt-2.log",
+          "log_sha256": "aeff290f8afa9c9a815a8394074ad86e02face133e354905c30dcc7cb8c101df",
+          "started_at_utc": "2026-10-05T08:13:22Z",
+          "status": "SUCCEEDED"
+        }
+      ],
+      "attempts": 2,
+      "dependencies": [
+        "bronze"
+      ],
+      "finished_at_utc": "2026-10-05T08:13:53Z",
+      "last_exit_code": 0,
+      "last_log_path": "build/managed-pipeline-evidence-v2/logs/silver-attempt-2.log",
+      "last_log_sha256": "aeff290f8afa9c9a815a8394074ad86e02face133e354905c30dcc7cb8c101df",
+      "max_attempts_per_invocation": 2,
+      "started_at_utc": "2026-10-05T08:13:22Z",
+      "status": "SUCCEEDED"
+    },
+    "station_dimension": {
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "exit_code": 0,
+          "finished_at_utc": "2026-10-05T08:14:23Z",
+          "log_path": "build/managed-pipeline-evidence-v2/logs/station_dimension-attempt-1.log",
+          "log_sha256": "44cd485f1e0c30b2e25490308d4cfaef72cd7b86f2863b35258876f3578fac1c",
+          "started_at_utc": "2026-10-05T08:13:53Z",
+          "status": "SUCCEEDED"
+        }
+      ],
+      "attempts": 1,
+      "dependencies": [],
+      "finished_at_utc": "2026-10-05T08:14:23Z",
+      "last_exit_code": 0,
+      "last_log_path": "build/managed-pipeline-evidence-v2/logs/station_dimension-attempt-1.log",
+      "last_log_sha256": "44cd485f1e0c30b2e25490308d4cfaef72cd7b86f2863b35258876f3578fac1c",
+      "max_attempts_per_invocation": 2,
+      "started_at_utc": "2026-10-05T08:13:53Z",
+      "status": "SUCCEEDED"
+    }
+  },
+  "updated_at_utc": "2026-10-05T08:15:45Z"
+}
