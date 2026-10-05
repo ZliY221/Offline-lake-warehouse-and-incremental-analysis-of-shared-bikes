@@ -58,15 +58,22 @@ class DateBackfillTests(unittest.TestCase):
             day_one = root / "day-one.ndjson"
             day_two = root / "day-two.ndjson"
             stations = root / "stations.ndjson"
-            write_rows(original_day_one, generate_trips(2, seed=10))
-            write_rows(day_one, generate_trips(3, seed=11))
-            write_rows(
-                day_two,
-                generate_trips(
-                    4,
-                    seed=12,
-                    start_time=datetime(2026, 10, 2, 6, 0, tzinfo=UTC),
-                ),
+            original_day_one_rows = generate_trips(2, seed=10)
+            write_rows(original_day_one, original_day_one_rows)
+            day_two_rows = generate_trips(
+                4,
+                seed=12,
+                start_time=datetime(2026, 10, 2, 6, 0, tzinfo=UTC),
+            )
+            replacement_rows = generate_trips(3, seed=11)
+            replacement_rows[0]["rider_key"] = day_two_rows[0]["rider_key"]
+            write_rows(day_one, replacement_rows)
+            write_rows(day_two, day_two_rows)
+            expected_affected_rider_count = len(
+                {
+                    row["rider_key"]
+                    for row in original_day_one_rows + replacement_rows
+                }
             )
             write_rows(stations, generate_station_snapshot(date(2026, 10, 1)))
             bronze = root / "bronze"
@@ -122,6 +129,10 @@ class DateBackfillTests(unittest.TestCase):
                 ),
             }
             self.assertTrue(all(unchanged_before.values()))
+            affected_cohort_before = partition_fingerprints(
+                gold_paths["cohort_retention_path"], "cohort_date=2026-10-02"
+            )
+            self.assertTrue(affected_cohort_before)
 
             result = run_date_backfill(
                 self.spark,
@@ -160,11 +171,28 @@ class DateBackfillTests(unittest.TestCase):
                 report["gold_daily_metrics_rebuild_scope"], "TARGET_BUSINESS_DATE"
             )
             self.assertEqual(
-                report["gold_cohort_retention_rebuild_scope"], "FULL_DATASET"
+                report["gold_cohort_retention_rebuild_scope"], "AFFECTED_COHORT_DATES"
+            )
+            self.assertEqual(
+                report["gold_cohort_retention_compute_scope"], "FULL_DATASET_SCAN"
+            )
+            self.assertEqual(report["affected_rider_count"], expected_affected_rider_count)
+            self.assertEqual(
+                report["affected_gold_cohort_retention_partitions"],
+                ["2026-10-01", "2026-10-02"],
             )
             self.assertEqual(report["cross_partition_trip_id_policy"], "REJECT_BEFORE_WRITE")
             self.assertEqual(report["gold_result"]["input_trip_rows"], 3)
             self.assertEqual(report["gold_result"]["cohort_input_trip_rows"], 7)
+            affected_cohort_rows = (
+                self.spark.read.parquet(str(gold_paths["cohort_retention_path"]))
+                .where("cohort_date IN (DATE '2026-10-01', DATE '2026-10-02')")
+                .count()
+            )
+            self.assertEqual(
+                report["gold_result"]["cohort_retention_rows"],
+                affected_cohort_rows,
+            )
             unchanged_after = {
                 "silver": partition_fingerprints(
                     silver_paths["valid_path"], "ingestion_date=2026-10-02"
@@ -177,6 +205,10 @@ class DateBackfillTests(unittest.TestCase):
                 ),
             }
             self.assertEqual(unchanged_after, unchanged_before)
+            affected_cohort_after = partition_fingerprints(
+                gold_paths["cohort_retention_path"], "cohort_date=2026-10-02"
+            )
+            self.assertNotEqual(affected_cohort_after, affected_cohort_before)
             quality = build_quality_report(
                 self.spark,
                 bronze_path=bronze,
