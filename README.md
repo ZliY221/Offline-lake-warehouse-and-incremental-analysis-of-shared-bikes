@@ -22,6 +22,7 @@
 - [x] 实现跨层行数、SCD2 区间、Gold 汇总和路线排名质量报告。
 - [x] 完成固定输入、预热加三轮测量的本机端到端性能证据。
 - [x] 使用纯合成匿名骑行者键实现 cohort 留存分析。
+- [x] 完成 Sort-Merge Join、显式 Broadcast Hash Join 与 AQE 的真实格式化物理计划证据。
 
 ## 为什么单独建仓
 
@@ -181,7 +182,15 @@ Gold 先按行程业务日期分别关联起点、终点在当日有效的 SCD2 
 ./scripts/test-all.ps1
 ```
 
-当前 21 项测试覆盖确定性、契约、金额/时间边界、匿名键格式与隐私字段、显式 Spark Schema、Parquet 类型、同分区幂等重跑、跨日期分区保留、确定性批次清单、状态与失败记录、单日期回填预检、跨分区主键写前保护、非目标分区文件哈希不变、cohort 旧新归属日期传播、质量失败、精确/冲突重复、派生字段、空输出 Schema、Silver 完整重建幂等、站点 SCD2 连续有效期与冲突处理，以及 Gold 时态关联、手工指标核对、路线排名、cohort 留存和维度缺失保护。
+当前 23 项测试覆盖确定性、契约、金额/时间边界、匿名键格式与隐私字段、显式 Spark Schema、Parquet 类型、同分区幂等重跑、跨日期分区保留、确定性批次清单、状态与失败记录、单日期回填预检、跨分区主键写前保护、非目标分区文件哈希不变、cohort 旧新归属日期传播、质量失败、精确/冲突重复、派生字段、空输出 Schema、Silver 完整重建幂等、站点 SCD2 连续有效期与冲突处理、Gold 时态关联与留存，以及真实 Spark 物理计划的 Join 策略变化和结果等价。
+
+## Spark 执行计划证据
+
+```powershell
+./scripts/explain-spark-plans.ps1
+```
+
+固定 1,000 行事实表与 8 行维度表实验中，禁用自动广播的基线计划出现 `SortMergeJoin` 和 `Exchange`；显式广播后出现 `BroadcastHashJoin` 与 `BroadcastExchange`，两种计划的聚合结果完全相同。开启 AQE 的计划出现 `AdaptiveSparkPlan`，但本次小数据没有观察到 `AQEShuffleRead coalesced`，因此不宣称发生动态分区合并。原始 JSON 与展开计划见 [`evidence/spark-plan-analysis-local.json`](evidence/spark-plan-analysis-local.json) 和 [`evidence/spark-plan-analysis-local.md`](evidence/spark-plan-analysis-local.md)。该实验只证明本机计划选择与结果等价，不是性能提升或生产调优证据。
 
 ## 一键作品集验收
 
@@ -189,7 +198,7 @@ Gold 先按行程业务日期分别关联起点、终点在当日有效的 SCD2 
 ./scripts/run-portfolio-demo.ps1
 ```
 
-脚本使用隔离的 `build/portfolio-demo/` 输出目录，依次重建所有数据层、执行 6 项跨层质量门禁并运行全部测试，最终输出机器可读摘要。架构、数据粒度和约束见 [`docs/architecture.md`](docs/architecture.md)，面试讲解与追问准备见 [`docs/interview-guide.md`](docs/interview-guide.md)，公开仓库与远程 CI 的验收证据见 [`docs/publishing-checklist.md`](docs/publishing-checklist.md)。
+脚本使用隔离的 `build/portfolio-demo/` 输出目录，依次重建所有数据层、执行 6 项跨层质量门禁、验证三类 Spark 物理计划并运行全部测试，最终输出机器可读摘要。架构、数据粒度和约束见 [`docs/architecture.md`](docs/architecture.md)，面试讲解与追问准备见 [`docs/interview-guide.md`](docs/interview-guide.md)，公开仓库与远程 CI 的验收证据见 [`docs/publishing-checklist.md`](docs/publishing-checklist.md)。
 
 ## 当前边界
 

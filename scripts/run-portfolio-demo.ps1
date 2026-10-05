@@ -20,6 +20,8 @@ $goldRetention = "$demoLakehouse/gold/cohort_retention"
 $bronzeManifests = "$demoLakehouse/control/bronze_batches"
 $backfillManifests = "$demoLakehouse/control/date_backfills"
 $qualityReport = "$normalizedDemoRoot/reports/data-quality.json"
+$planJson = "$normalizedDemoRoot/reports/spark-plan-analysis.json"
+$planMarkdown = "$normalizedDemoRoot/reports/spark-plan-analysis.md"
 
 Push-Location $repoRoot
 try {
@@ -58,6 +60,18 @@ try {
     if ($quality.overall_status -ne "PASS") {
         throw "Portfolio demo quality gate returned $($quality.overall_status)."
     }
+    & (Join-Path $PSScriptRoot "explain-spark-plans.ps1") `
+        -Rows 1000 `
+        -JsonPath $planJson `
+        -MarkdownPath $planMarkdown
+    $plan = Get-Content -LiteralPath $planJson -Raw | ConvertFrom-Json
+    if (
+        $plan.baseline_sort_merge.features.SortMergeJoin -lt 1 -or
+        $plan.explicit_broadcast.features.BroadcastHashJoin -lt 1 -or
+        $plan.adaptive_aggregation.features.AdaptiveSparkPlan -lt 1
+    ) {
+        throw "Portfolio demo Spark plan gate did not observe the required operators."
+    }
     if (-not $SkipTests) {
         & (Join-Path $PSScriptRoot "test-all.ps1")
     }
@@ -72,6 +86,8 @@ try {
         gold_cohort_retention_rows = $quality.dataset_counts.gold_cohort_retention_rows
         automated_tests = if ($SkipTests) { "SKIPPED" } else { "PASS" }
         report = $qualityReport
+        spark_plan_analysis = "PASS"
+        spark_plan_report = $planJson
     } | ConvertTo-Json
 }
 finally {

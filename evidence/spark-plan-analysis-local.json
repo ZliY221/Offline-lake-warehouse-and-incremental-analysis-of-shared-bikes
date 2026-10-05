@@ -1,0 +1,116 @@
+{
+  "adaptive_aggregation": {
+    "features": {
+      "AQEShuffleRead": 0,
+      "AdaptiveSparkPlan": 2,
+      "BroadcastExchange": 0,
+      "BroadcastHashJoin": 0,
+      "Exchange": 6,
+      "SortMergeJoin": 2,
+      "coalesced": 0
+    },
+    "formatted_plan": "== Physical Plan ==\nAdaptiveSparkPlan (14)\n+- HashAggregate (13)\n   +- Exchange (12)\n      +- HashAggregate (11)\n         +- Project (10)\n            +- SortMergeJoin Inner (9)\n               :- Sort (4)\n               :  +- Exchange (3)\n               :     +- Project (2)\n               :        +- Range (1)\n               +- Sort (8)\n                  +- Exchange (7)\n                     +- Filter (6)\n                        +- Scan ExistingRDD (5)\n\n\n(1) Range\nOutput [1]: [id#<id>]\nArguments: Range (0, 1000, step=1, splits=Some(2))\n\n(2) Project\nOutput [1]: [format_string(ST-%03d, ((id#<id> % 8) + 1)) AS station_id#<id>]\nInput [1]: [id#<id>]\n\n(3) Exchange\nInput [1]: [station_id#<id>]\nArguments: hashpartitioning(station_id#<id>, 16), REPARTITION_BY_NUM, [plan_id=<id>]\n\n(4) Sort\nInput [1]: [station_id#<id>]\nArguments: [station_id#<id> ASC NULLS FIRST], false, 0\n\n(5) Scan ExistingRDD\nOutput [2]: [station_id#<id>, district#<id>]\nArguments: [station_id#<id>, district#<id>], MapPartitionsRDD[4] at applySchemaToPythonRDD at NativeMethodAccessorImpl.java:0, ExistingRDD, UnknownPartitioning(0)\n\n(6) Filter\nInput [2]: [station_id#<id>, district#<id>]\nCondition : isnotnull(station_id#<id>)\n\n(7) Exchange\nInput [2]: [station_id#<id>, district#<id>]\nArguments: hashpartitioning(station_id#<id>, 16), ENSURE_REQUIREMENTS, [plan_id=<id>]\n\n(8) Sort\nInput [2]: [station_id#<id>, district#<id>]\nArguments: [station_id#<id> ASC NULLS FIRST], false, 0\n\n(9) SortMergeJoin\nLeft keys [1]: [station_id#<id>]\nRight keys [1]: [station_id#<id>]\nJoin type: Inner\nJoin condition: None\n\n(10) Project\nOutput [1]: [district#<id>]\nInput [3]: [station_id#<id>, station_id#<id>, district#<id>]\n\n(11) HashAggregate\nInput [1]: [district#<id>]\nKeys [1]: [district#<id>]\nFunctions [1]: [partial_count(1)]\nAggregate Attributes [1]: [count#<id>]\nResults [2]: [district#<id>, count#<id>]\n\n(12) Exchange\nInput [2]: [district#<id>, count#<id>]\nArguments: hashpartitioning(district#<id>, 16), ENSURE_REQUIREMENTS, [plan_id=<id>]\n\n(13) HashAggregate\nInput [2]: [district#<id>, count#<id>]\nKeys [1]: [district#<id>]\nFunctions [1]: [count(1)]\nAggregate Attributes [1]: [count(1)#<id>]\nResults [2]: [district#<id>, count(1)#<id> AS trip_count#<id>]\n\n(14) AdaptiveSparkPlan\nOutput [2]: [district#<id>, trip_count#<id>]\nArguments: isFinalPlan=false",
+    "result": [
+      {
+        "district": "district-0",
+        "trip_count": 250
+      },
+      {
+        "district": "district-1",
+        "trip_count": 375
+      },
+      {
+        "district": "district-2",
+        "trip_count": 375
+      }
+    ],
+    "settings": {
+      "adaptive_enabled": true,
+      "auto_broadcast_join_threshold": -1,
+      "coalesce_partitions_enabled": true,
+      "initial_shuffle_partitions": 16
+    }
+  },
+  "baseline_sort_merge": {
+    "features": {
+      "AQEShuffleRead": 0,
+      "AdaptiveSparkPlan": 0,
+      "BroadcastExchange": 0,
+      "BroadcastHashJoin": 0,
+      "Exchange": 6,
+      "SortMergeJoin": 2,
+      "coalesced": 0
+    },
+    "formatted_plan": "== Physical Plan ==\n* HashAggregate (13)\n+- Exchange (12)\n   +- * HashAggregate (11)\n      +- * Project (10)\n         +- * SortMergeJoin Inner (9)\n            :- * Sort (4)\n            :  +- Exchange (3)\n            :     +- * Project (2)\n            :        +- * Range (1)\n            +- * Sort (8)\n               +- Exchange (7)\n                  +- * Filter (6)\n                     +- * Scan ExistingRDD (5)\n\n\n(1) Range [codegen id : 1]\nOutput [1]: [id#<id>]\nArguments: Range (0, 1000, step=1, splits=Some(2))\n\n(2) Project [codegen id : 1]\nOutput [2]: [format_string(ST-%03d, ((id#<id> % 8) + 1)) AS station_id#<id>, ((id#<id> % 17) + 1) AS trip_minutes#<id>]\nInput [1]: [id#<id>]\n\n(3) Exchange\nInput [2]: [station_id#<id>, trip_minutes#<id>]\nArguments: hashpartitioning(station_id#<id>, 8), ENSURE_REQUIREMENTS, [plan_id=<id>]\n\n(4) Sort [codegen id : 2]\nInput [2]: [station_id#<id>, trip_minutes#<id>]\nArguments: [station_id#<id> ASC NULLS FIRST], false, 0\n\n(5) Scan ExistingRDD [codegen id : 3]\nOutput [2]: [station_id#<id>, district#<id>]\nArguments: [station_id#<id>, district#<id>], MapPartitionsRDD[4] at applySchemaToPythonRDD at NativeMethodAccessorImpl.java:0, ExistingRDD, UnknownPartitioning(0)\n\n(6) Filter [codegen id : 3]\nInput [2]: [station_id#<id>, district#<id>]\nCondition : isnotnull(station_id#<id>)\n\n(7) Exchange\nInput [2]: [station_id#<id>, district#<id>]\nArguments: hashpartitioning(station_id#<id>, 8), ENSURE_REQUIREMENTS, [plan_id=<id>]\n\n(8) Sort [codegen id : 4]\nInput [2]: [station_id#<id>, district#<id>]\nArguments: [station_id#<id> ASC NULLS FIRST], false, 0\n\n(9) SortMergeJoin [codegen id : 5]\nLeft keys [1]: [station_id#<id>]\nRight keys [1]: [station_id#<id>]\nJoin type: Inner\nJoin condition: None\n\n(10) Project [codegen id : 5]\nOutput [2]: [trip_minutes#<id>, district#<id>]\nInput [4]: [station_id#<id>, trip_minutes#<id>, station_id#<id>, district#<id>]\n\n(11) HashAggregate [codegen id : 5]\nInput [2]: [trip_minutes#<id>, district#<id>]\nKeys [1]: [district#<id>]\nFunctions [2]: [partial_count(1), partial_sum(trip_minutes#<id>)]\nAggregate Attributes [2]: [count#<id>, sum#<id>]\nResults [3]: [district#<id>, count#<id>, sum#<id>]\n\n(12) Exchange\nInput [3]: [district#<id>, count#<id>, sum#<id>]\nArguments: hashpartitioning(district#<id>, 8), ENSURE_REQUIREMENTS, [plan_id=<id>]\n\n(13) HashAggregate [codegen id : 6]\nInput [3]: [district#<id>, count#<id>, sum#<id>]\nKeys [1]: [district#<id>]\nFunctions [2]: [count(1), sum(trip_minutes#<id>)]\nAggregate Attributes [2]: [count(1)#<id>, sum(trip_minutes#<id>)#<id>]\nResults [3]: [district#<id>, count(1)#<id> AS trip_count#<id>, sum(trip_minutes#<id>)#<id> AS total_trip_minutes#<id>]",
+    "result": [
+      {
+        "district": "district-0",
+        "total_trip_minutes": 2232,
+        "trip_count": 250
+      },
+      {
+        "district": "district-1",
+        "total_trip_minutes": 3373,
+        "trip_count": 375
+      },
+      {
+        "district": "district-2",
+        "total_trip_minutes": 3374,
+        "trip_count": 375
+      }
+    ],
+    "settings": {
+      "adaptive_enabled": false,
+      "auto_broadcast_join_threshold": -1,
+      "shuffle_partitions": 8
+    }
+  },
+  "claims_boundary": "This report proves plan selection and result equivalence on local synthetic data; it is not a throughput benchmark or production tuning result.",
+  "environment": {
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+    "python_version": "3.14.4",
+    "spark_master": "local[2]",
+    "spark_version": "4.2.0"
+  },
+  "explicit_broadcast": {
+    "features": {
+      "AQEShuffleRead": 0,
+      "AdaptiveSparkPlan": 0,
+      "BroadcastExchange": 2,
+      "BroadcastHashJoin": 2,
+      "Exchange": 4,
+      "SortMergeJoin": 0,
+      "coalesced": 0
+    },
+    "formatted_plan": "== Physical Plan ==\n* HashAggregate (10)\n+- Exchange (9)\n   +- * HashAggregate (8)\n      +- * Project (7)\n         +- * BroadcastHashJoin Inner BuildRight (6)\n            :- * Project (2)\n            :  +- * Range (1)\n            +- BroadcastExchange (5)\n               +- * Filter (4)\n                  +- * Scan ExistingRDD (3)\n\n\n(1) Range [codegen id : 2]\nOutput [1]: [id#<id>]\nArguments: Range (0, 1000, step=1, splits=Some(2))\n\n(2) Project [codegen id : 2]\nOutput [2]: [format_string(ST-%03d, ((id#<id> % 8) + 1)) AS station_id#<id>, ((id#<id> % 17) + 1) AS trip_minutes#<id>]\nInput [1]: [id#<id>]\n\n(3) Scan ExistingRDD [codegen id : 1]\nOutput [2]: [station_id#<id>, district#<id>]\nArguments: [station_id#<id>, district#<id>], MapPartitionsRDD[4] at applySchemaToPythonRDD at NativeMethodAccessorImpl.java:0, ExistingRDD, UnknownPartitioning(0)\n\n(4) Filter [codegen id : 1]\nInput [2]: [station_id#<id>, district#<id>]\nCondition : isnotnull(station_id#<id>)\n\n(5) BroadcastExchange\nInput [2]: [station_id#<id>, district#<id>]\nArguments: HashedRelationBroadcastMode(List(input[0, string, false]),false), [plan_id=<id>]\n\n(6) BroadcastHashJoin [codegen id : 2]\nLeft keys [1]: [station_id#<id>]\nRight keys [1]: [station_id#<id>]\nJoin type: Inner\nJoin condition: None\n\n(7) Project [codegen id : 2]\nOutput [2]: [trip_minutes#<id>, district#<id>]\nInput [4]: [station_id#<id>, trip_minutes#<id>, station_id#<id>, district#<id>]\n\n(8) HashAggregate [codegen id : 2]\nInput [2]: [trip_minutes#<id>, district#<id>]\nKeys [1]: [district#<id>]\nFunctions [2]: [partial_count(1), partial_sum(trip_minutes#<id>)]\nAggregate Attributes [2]: [count#<id>, sum#<id>]\nResults [3]: [district#<id>, count#<id>, sum#<id>]\n\n(9) Exchange\nInput [3]: [district#<id>, count#<id>, sum#<id>]\nArguments: hashpartitioning(district#<id>, 8), ENSURE_REQUIREMENTS, [plan_id=<id>]\n\n(10) HashAggregate [codegen id : 3]\nInput [3]: [district#<id>, count#<id>, sum#<id>]\nKeys [1]: [district#<id>]\nFunctions [2]: [count(1), sum(trip_minutes#<id>)]\nAggregate Attributes [2]: [count(1)#<id>, sum(trip_minutes#<id>)#<id>]\nResults [3]: [district#<id>, count(1)#<id> AS trip_count#<id>, sum(trip_minutes#<id>)#<id> AS total_trip_minutes#<id>]",
+    "result": [
+      {
+        "district": "district-0",
+        "total_trip_minutes": 2232,
+        "trip_count": 250
+      },
+      {
+        "district": "district-1",
+        "total_trip_minutes": 3373,
+        "trip_count": 375
+      },
+      {
+        "district": "district-2",
+        "total_trip_minutes": 3374,
+        "trip_count": 375
+      }
+    ],
+    "settings": {
+      "adaptive_enabled": false,
+      "broadcast_hint": true,
+      "shuffle_partitions": 8
+    }
+  },
+  "generated_at_utc": "2026-10-05T01:49:43Z",
+  "input": {
+    "dimension_rows": 8,
+    "fact_rows": 1000,
+    "station_keys": 8
+  },
+  "report_version": "1.0"
+}
