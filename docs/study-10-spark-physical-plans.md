@@ -10,9 +10,10 @@
 
 1. 禁用 AQE，并把自动广播阈值设为 `-1`：计划出现 `SortMergeJoin`、两侧排序与 `Exchange`；
 2. 对同一维度显式使用 `broadcast`：计划改为 `BroadcastHashJoin` 和 `BroadcastExchange`，聚合结果与基线逐行一致；
-3. 开启 AQE、分区合并并把初始 Shuffle 分区设为 16：计划出现 `AdaptiveSparkPlan`。
+3. 开启 AQE、分区合并并把初始 Shuffle 分区设为 16：action 后的最终计划出现 `AdaptiveSparkPlan isFinalPlan=true` 与 `AQEShuffleRead coalesced`；
+4. 生成 20,000 行事实数据，其中 90% 使用热点键 `0`，关闭 AQE 保存基线，再开启倾斜 Join：最终计划出现 `SortMergeJoin(skew=true)` 与 `AQEShuffleRead ... skewed`。
 
-本次小数据计划没有观察到 `AQEShuffleRead coalesced`，因此只能证明 AQE 包装计划已启用，不能宣称发生了动态分区合并或倾斜优化。
+普通 AQE 与倾斜对照都直接在被解释的 DataFrame 上执行 action，避免把仍为 `isFinalPlan=false` 的初始包装计划当作运行时证据。倾斜优化前后还会核对 8 个分组的计数和载荷字符总数完全一致。
 
 ## 运行与证据
 
@@ -31,7 +32,7 @@
 
 - 这是 WSL2 `local[2]`、合成小数据上的计划选择实验，不是速度或吞吐基准；
 - 广播 Join 避免大表侧 Shuffle 的结论依赖维度确实足够小，生产中需要结合统计信息和内存评估；
-- AQE 的 `AdaptiveSparkPlan` 只说明功能启用，是否合并分区、转换 Join 或处理倾斜必须以最终运行计划和真实指标为准；
+- 本实验观察到了最终计划中的分区合并和倾斜拆分，但阈值是为 20,000 行合成数据刻意调低，不能直接复用为生产参数；
 - 当前没有 Spark History Server、生产集群或大规模数据倾斜证据。
 
 ## 面试回答结构

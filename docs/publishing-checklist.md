@@ -24,10 +24,10 @@ git log --oneline -10
 
 - `git status --short` 无输出；
 - 发布审计不存在高置信密钥或超过 20 MiB 的跟踪文件；`PASS_WITH_REVIEW` 项逐条确认是合成测试内容；
-- 一键演示最后输出 `"status": "PASS"`、`"automated_tests": "PASS"`、`"spark_plan_analysis": "PASS"`；
+- 一键演示最后输出 `"status": "PASS"`、`"automated_tests": "PASS"`、`"spark_plan_analysis": "PASS"`、`"spark_skew_join_analysis": "PASS"`；
 - 质量检查数为 6，正式样例行数与 README 一致；
 - `evidence/benchmark-10000-local.json` 能被 JSON 解析；
-- `evidence/spark-plan-analysis-local.json` 同时包含 Sort-Merge、显式 Broadcast Hash Join 与 AQE 计划证据；
+- `evidence/spark-plan-analysis-local.json` 同时包含 Sort-Merge、显式 Broadcast Hash Join、AQE 最终计划、分区合并与倾斜 Join 证据；
 - 仓库内没有简历 PDF、证书原图、学籍验证码、手机号、邮箱密钥或 `.env`。
 
 ## 当前审计结果

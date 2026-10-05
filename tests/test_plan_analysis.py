@@ -32,12 +32,23 @@ class PlanAnalysisTests(unittest.TestCase):
         baseline = report["baseline_sort_merge"]
         broadcasted = report["explicit_broadcast"]
         adaptive = report["adaptive_aggregation"]
+        skew_baseline = report["skew_baseline"]
+        adaptive_skew = report["adaptive_skew_join"]
         self.assertEqual(baseline["result"], broadcasted["result"])
         self.assertGreater(baseline["features"]["SortMergeJoin"], 0)
         self.assertGreater(baseline["features"]["Exchange"], 0)
         self.assertGreater(broadcasted["features"]["BroadcastHashJoin"], 0)
         self.assertGreater(broadcasted["features"]["BroadcastExchange"], 0)
         self.assertGreater(adaptive["features"]["AdaptiveSparkPlan"], 0)
+        self.assertGreater(adaptive["features"]["isFinalPlan=true"], 0)
+        self.assertGreater(adaptive["features"]["coalesced"], 0)
+        self.assertEqual(skew_baseline["result"], adaptive_skew["result"])
+        self.assertGreater(skew_baseline["features"]["SortMergeJoin"], 0)
+        self.assertGreater(adaptive_skew["features"]["AdaptiveSparkPlan"], 0)
+        self.assertGreater(adaptive_skew["features"]["isFinalPlan=true"], 0)
+        self.assertGreater(adaptive_skew["features"]["skew=true"], 0)
+        self.assertGreater(adaptive_skew["features"]["skewed"], 0)
+        self.assertEqual(report["skew_input"]["hot_key_rows"], 18_000)
         self.assertEqual(report["input"]["fact_rows"], 256)
 
 

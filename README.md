@@ -23,6 +23,7 @@
 - [x] 完成固定输入、预热加三轮测量的本机端到端性能证据。
 - [x] 使用纯合成匿名骑行者键实现 cohort 留存分析。
 - [x] 完成 Sort-Merge Join、显式 Broadcast Hash Join 与 AQE 的真实格式化物理计划证据。
+- [x] 构造 90% 热点键倾斜场景，验证 AQE 最终计划的分区合并与倾斜 Join 拆分。
 
 ## 为什么单独建仓
 
@@ -190,7 +191,9 @@ Gold 先按行程业务日期分别关联起点、终点在当日有效的 SCD2 
 ./scripts/explain-spark-plans.ps1
 ```
 
-固定 1,000 行事实表与 8 行维度表实验中，禁用自动广播的基线计划出现 `SortMergeJoin` 和 `Exchange`；显式广播后出现 `BroadcastHashJoin` 与 `BroadcastExchange`，两种计划的聚合结果完全相同。开启 AQE 的计划出现 `AdaptiveSparkPlan`，但本次小数据没有观察到 `AQEShuffleRead coalesced`，因此不宣称发生动态分区合并。原始 JSON 与展开计划见 [`evidence/spark-plan-analysis-local.json`](evidence/spark-plan-analysis-local.json) 和 [`evidence/spark-plan-analysis-local.md`](evidence/spark-plan-analysis-local.md)。该实验只证明本机计划选择与结果等价，不是性能提升或生产调优证据。
+固定 1,000 行事实表与 8 行维度表实验中，禁用自动广播的基线计划出现 `SortMergeJoin` 和 `Exchange`；显式广播后出现 `BroadcastHashJoin` 与 `BroadcastExchange`，两种计划的聚合结果完全相同。执行同一个 AQE 聚合并在原 DataFrame 上触发 action 后，最终计划为 `isFinalPlan=true`，出现 `AQEShuffleRead coalesced`。
+
+另一个受控实验生成 20,000 行事实数据，其中 90% 使用同一个热点键。禁用 AQE 的结果作为基线；开启 AQE 倾斜优化后，最终计划出现 `SortMergeJoin(skew=true)` 与 `AQEShuffleRead ... skewed`，8 个分组的行数和载荷字符总数与基线完全一致。原始 JSON 与展开计划见 [`evidence/spark-plan-analysis-local.json`](evidence/spark-plan-analysis-local.json) 和 [`evidence/spark-plan-analysis-local.md`](evidence/spark-plan-analysis-local.md)。这些实验只证明本机合成数据上的计划变化和结果等价，不是生产性能提升或 SLA 证据。
 
 ## 一键作品集验收
 

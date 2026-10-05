@@ -33,6 +33,7 @@ def main() -> None:
                     "baseline_join": report["baseline_sort_merge"]["features"],
                     "broadcast_join": report["explicit_broadcast"]["features"],
                     "adaptive": report["adaptive_aggregation"]["features"],
+                    "adaptive_skew_join": report["adaptive_skew_join"]["features"],
                 },
                 sort_keys=True,
             )

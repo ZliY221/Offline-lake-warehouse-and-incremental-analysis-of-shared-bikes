@@ -62,6 +62,6 @@ Bronze 与回填先写 `RUNNING` 控制记录，成功转为 `SUCCEEDED`，异�
 - `scripts/run-portfolio-demo.ps1`：隔离目录内重建全部层、执行质量门禁和测试；
 - `scripts/test-all.ps1`：运行 23 项自动化测试；
 - `scripts/run-benchmark.ps1`：1 轮预热加 3 轮本机性能测量；
-- `scripts/explain-spark-plans.ps1`：对比 Sort-Merge、Broadcast Hash Join 与 AQE 格式化物理计划；
+- `scripts/explain-spark-plans.ps1`：对比 Sort-Merge、Broadcast Hash Join、AQE 分区合并与倾斜 Join 最终物理计划；
 - `evidence/benchmark-10000-local.json`：保存环境、输入指纹和逐轮原始结果。
 - `evidence/spark-plan-analysis-local.*`：保存归一化计划、算子计数、设置和等价结果。

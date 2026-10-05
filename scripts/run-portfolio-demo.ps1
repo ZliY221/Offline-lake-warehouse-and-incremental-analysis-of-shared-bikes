@@ -68,7 +68,11 @@ try {
     if (
         $plan.baseline_sort_merge.features.SortMergeJoin -lt 1 -or
         $plan.explicit_broadcast.features.BroadcastHashJoin -lt 1 -or
-        $plan.adaptive_aggregation.features.AdaptiveSparkPlan -lt 1
+        $plan.adaptive_aggregation.features.AdaptiveSparkPlan -lt 1 -or
+        $plan.adaptive_aggregation.features.'isFinalPlan=true' -lt 1 -or
+        $plan.adaptive_aggregation.features.coalesced -lt 1 -or
+        $plan.adaptive_skew_join.features.'skew=true' -lt 1 -or
+        $plan.adaptive_skew_join.features.skewed -lt 1
     ) {
         throw "Portfolio demo Spark plan gate did not observe the required operators."
     }
@@ -87,6 +91,7 @@ try {
         automated_tests = if ($SkipTests) { "SKIPPED" } else { "PASS" }
         report = $qualityReport
         spark_plan_analysis = "PASS"
+        spark_skew_join_analysis = "PASS"
         spark_plan_report = $planJson
     } | ConvertTo-Json
 }

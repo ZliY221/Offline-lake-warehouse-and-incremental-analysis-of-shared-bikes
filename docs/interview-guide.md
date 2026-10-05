@@ -10,7 +10,7 @@
 2. 再说分层：Bronze 保留来源与摄取日期，Silver 做规则和确定性去重，DIM 保存 SCD2 历史，Gold 做时态关联与聚合。
 3. 说两个关键决策：主键冲突全部隔离，不任意保留；SCD2 使用左闭右开区间，避免变化日同时命中两个版本。
 4. 说可靠性：批次 ID 由日期与 SHA-256 生成，控制记录有运行状态和尝试次数；回填先校验业务日期，再只覆盖目标 Bronze 分区。
-5. 最后给证据：23 项测试、6 项跨层质量检查、非目标分区文件哈希不变、10,000 行三轮基准，以及 Sort-Merge/Broadcast/AQE 原始计划。
+5. 最后给证据：23 项测试、6 项跨层质量检查、非目标分区文件哈希不变、10,000 行三轮基准，以及 Sort-Merge/Broadcast/AQE 最终计划。
 
 ## 高频追问
 
@@ -40,7 +40,11 @@
 
 ### 为什么广播站点维度？如何证明生效？
 
-当维度足够小且能放入执行器内存时，广播它可以避免事实表按 Join Key 参与双侧 Shuffle。项目用同一组聚合做受控对照：禁用自动广播时格式化计划出现 `SortMergeJoin` 和 `Exchange`，显式 `broadcast` 后出现 `BroadcastHashJoin` 与 `BroadcastExchange`，并先核对两边结果完全一致。AQE 计划出现 `AdaptiveSparkPlan`，但没有观察到 `AQEShuffleRead coalesced`，所以不声称发生了分区合并。
+当维度足够小且能放入执行器内存时，广播它可以避免事实表按 Join Key 参与双侧 Shuffle。项目用同一组聚合做受控对照：禁用自动广播时格式化计划出现 `SortMergeJoin` 和 `Exchange`，显式 `broadcast` 后出现 `BroadcastHashJoin` 与 `BroadcastExchange`，并先核对两边结果完全一致。AQE 对照在 action 后保存 `isFinalPlan=true` 的最终计划，其中出现 `AQEShuffleRead coalesced`。
+
+### 如何证明 AQE 真的处理了数据倾斜？
+
+项目生成 20,000 行事实数据，让 90% 行落在同一个 Join Key，并禁用广播。关闭 AQE 时保存 Sort-Merge 基线；开启 AQE、倾斜 Join 和受控阈值后，最终计划出现 `SortMergeJoin(skew=true)` 以及 `AQEShuffleRead ... skewed`。两边 8 个分组的计数和载荷字符总数完全一致。这只能证明本机合成场景触发了运行时拆分，不能直接推导生产提速比例。
 
 ## 诚实边界
 
