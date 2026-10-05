@@ -84,5 +84,7 @@ git push origin main
 - 对应提交：`eabfe8cdc38078f9b570da779280250e5904fb62`；验证只写受影响 cohort 分区，同时明确计算仍为完整 Silver 扫描。
 - Spark 物理计划证据成功 CI：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/runs/37253997852>
 - 对应提交：`aed97c1d05398dbcea2486c0c51ae43880d721cb`；23 项测试通过，并保存 Sort-Merge、显式 Broadcast Hash Join 与 AQE 的真实格式化计划。该证据只证明计划选择和结果等价，不作为生产性能结论。
+- AQE 最终计划与倾斜 Join 证据成功 CI：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/runs/37255277521>
+- 对应提交：`0e02a82cc23e9b7a8dd1615b2fff32f0146b8cb5`；23 项测试通过，最终计划实际观察到 `AQEShuffleRead coalesced`、`SortMergeJoin(skew=true)` 与倾斜分区读取，并验证优化前后结果一致。
 - 发布与首次成功日期：2026 年 10 月 4 日
 - 若 CI 与本机结果不同，记录原因和修复提交。
