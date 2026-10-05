@@ -25,6 +25,7 @@ def main() -> None:
     parser.add_argument("--backfill-manifest", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--route-limit", type=int, default=3)
+    parser.add_argument("--fail-on-error", action="store_true")
     args = parser.parse_args()
     spark = create_local_spark("bike-trip-quality-report", Path("build/spark-warehouse"))
     try:
@@ -55,6 +56,8 @@ def main() -> None:
                 sort_keys=True,
             )
         )
+        if args.fail_on_error and report["overall_status"] != "PASS":
+            raise SystemExit(1)
     finally:
         spark.stop()
 
