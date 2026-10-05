@@ -79,5 +79,7 @@ git push origin main
 - 对应提交：`e864b1d9d8c4a7a7d75784bfa167c3bbe89448ce`
 - 分区级增量回填成功 CI：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/runs/37251252105>
 - 对应提交：`85e3dfffc47ecd4348e008d7835c9246d02f2ac8`；21 项测试通过，覆盖非目标分区文件哈希不变与跨分区主键写前失败。
+- Cohort 旧/新归属依赖传播成功 CI：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/runs/37252400028>
+- 对应提交：`eabfe8cdc38078f9b570da779280250e5904fb62`；验证只写受影响 cohort 分区，同时明确计算仍为完整 Silver 扫描。
 - 发布与首次成功日期：2026 年 10 月 4 日
 - 若 CI 与本机结果不同，记录原因和修复提交。
