@@ -90,5 +90,7 @@ git push origin main
 - 对应提交：`0e02a82cc23e9b7a8dd1615b2fff32f0146b8cb5`；23 项测试通过，最终计划实际观察到 `AQEShuffleRead coalesced`、`SortMergeJoin(skew=true)` 与倾斜分区读取，并验证优化前后结果一致。
 - Spark UI REST Stage/Task 指标成功 CI：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/runs/37277811133>
 - 对应提交：`c1efbbdd34f082dc0a2f0eb1dfce0125a2c89f3e`；25 项测试通过，实时采集目标 Job、完成 Stage、任务耗时、Shuffle、GC 与 Spill 指标；本机静态网页受中文路径限制，不列为已验证证据。
+- 可恢复五阶段编排成功 CI：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/runs/37284868111>
+- 对应提交：`8d9c7cf701907ee6120891232b767c7a397b427d`；28 项测试通过，故障注入验证 Silver 首次失败后重试成功，恢复运行按任务图指纹跳过 5 个已成功任务。该实现是本地顺序编排语义，不作为 Airflow、Dagster 或生产调度经验。
 - 发布与首次成功日期：2026 年 10 月 4 日
 - 若 CI 与本机结果不同，记录原因和修复提交。
