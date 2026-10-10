@@ -1,1 +1,1 @@
-"""PySpark batch lakehouse portfolio project."""
+"""PySpark batch lakehouse lakehouse project."""

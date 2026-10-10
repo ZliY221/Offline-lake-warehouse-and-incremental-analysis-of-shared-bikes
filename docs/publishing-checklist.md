@@ -1,6 +1,6 @@
 # 远程仓库发布清单
 
-当前仓库已于 2026 年 10 月 4 日公开发布到 GitHub，代码、测试、质量报告、基准和面试材料均已同步。以下清单记录已完成的远程证据和仍需人工决定的发布事项。
+当前仓库已于 2026 年 10 月 4 日公开发布到 GitHub，代码、测试、质量报告、基准和技术文档均已同步。以下清单记录已完成的远程证据和仍需人工决定的发布事项。
 
 ## 推荐仓库信息
 
@@ -16,7 +16,7 @@
 ```powershell
 git status --short
 python scripts/audit-publication.py
-./scripts/run-portfolio-demo.ps1
+./scripts/run-project-acceptance.ps1
 git log --oneline -10
 ```
 
@@ -32,7 +32,7 @@ git log --oneline -10
 - `evidence/orchestration-retry-local.json` 包含 Silver 失败/成功两次尝试、独立日志哈希、最终质量门禁成功和恢复跳过事件；
 - `evidence/airflow-dag-test-local.json` 包含 Airflow 版本、5 个任务的依赖/状态/尝试次数、Silver 两次尝试和 6 项质量门禁成功；
 - `evidence/airflow-backfill-local.json` 包含类型化回填参数、成功/失败任务状态、重试与最终失败回调计数，以及失败补数前后 Bronze 文件不变结论；
-- 仓库内没有简历 PDF、证书原图、学籍验证码、手机号、邮箱密钥或 `.env`。
+- 仓库内没有个人文档、证书原图、学籍验证码、手机号、邮箱密钥或 `.env`。
 
 ## 当前审计结果
 
@@ -41,7 +41,7 @@ git log --oneline -10
 ## 仍需本人决定
 
 - 采用哪一种开源许可证。未确认前不自动添加许可证；
-- 是否同时发布英文 README。当前中文 README 更适合国内实习投递。
+- 是否同时发布英文 README。
 
 ## 后续推送与远程验证
 
@@ -57,7 +57,7 @@ git push origin main
 
 1. GitHub Actions 的 Python/Spark 测试与 Airflow DAG 导入 Job 均成功；
 2. README Mermaid 架构图可正常渲染；
-3. 相对链接能打开架构、面试指南和性能 JSON；
+3. 相对链接能打开架构文档和性能 JSON；
 4. 仓库 About、Topics 和简介已经填写；
 5. 置顶仓库只保留旗舰实时项目、共享单车离线湖仓和一个真正不同的项目。
 

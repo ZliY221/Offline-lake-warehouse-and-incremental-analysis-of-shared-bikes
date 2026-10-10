@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Audit Git-tracked files before publishing a portfolio repository."""
+"""Audit Git-tracked files before publishing a lakehouse repository."""
 
 from __future__ import annotations
 

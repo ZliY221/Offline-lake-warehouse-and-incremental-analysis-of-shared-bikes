@@ -89,7 +89,7 @@ def _backfill_arguments(input_path: str, target_date: str) -> list[str]:
             minLength=1,
         ),
     },
-    tags=("portfolio", "pyspark", "backfill"),
+    tags=("lakehouse", "pyspark", "backfill"),
     description="Parameterized single-date backfill with blocking quality checks",
 )
 def bike_lakehouse_date_backfill():

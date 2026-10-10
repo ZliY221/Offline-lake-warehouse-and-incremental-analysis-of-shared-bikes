@@ -1,4 +1,4 @@
-# 学习单元 11：从 Spark UI REST 指标定位 Stage 与 Task
+# 从 Spark UI REST 指标定位 Stage 与 Task
 
 ## 为什么执行计划还不够
 
@@ -27,6 +27,6 @@
 ## 证据和边界
 
 - [`evidence/spark-stage-metrics-local.json`](../evidence/spark-stage-metrics-local.json) 保存机器可读原始指标；
-- [`evidence/spark-stage-metrics-local.md`](../evidence/spark-stage-metrics-local.md) 保存便于面试复习的摘要；
+- [`evidence/spark-stage-metrics-local.md`](../evidence/spark-stage-metrics-local.md) 保存便于人工复核的摘要；
 - 数值只适用于 WSL2 `local[2]` 和这次合成工作负载，不是集群容量或 SLA；
 - 当前仓库路径包含中文，Spark 4.2 Jetty 静态资源会打印 `Bad escape` 告警，但 `/api/v1` 已实际返回完整指标，所以这里只宣称 REST 采集成功，不宣称本机静态网页展示已验证。

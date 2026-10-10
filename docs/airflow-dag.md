@@ -1,6 +1,6 @@
-# 学习单元 13：把批处理任务图接入 Airflow
+# 把批处理任务图接入 Airflow
 
-## 学习目标
+## 项目目标
 
 理解业务作业、任务图定义和调度框架之间的边界，并能用真实运行证据解释依赖、重试与质量门禁。
 
@@ -41,10 +41,10 @@ Airflow 安装在 Git 忽略的项目目录中，使用独立 Python 3.12，不�
 - 跨层质量检查：6 项全部 `PASS`；
 - Bronze 与合法 Silver：均为 20 行。
 
-原始结果保存在 `evidence/airflow-dag-test-local.json`，面试展示版保存在同名 Markdown 文件。
+原始结果保存在 `evidence/airflow-dag-test-local.json`，可读摘要保存在同名 Markdown 文件。
 
 ## 远程 CI 与证据边界
 
 GitHub Actions 使用官方约束文件安装 Airflow 3.1.6，检查 DAG 能导入、依赖正确且每个任务配置一次重试。为控制 CI 时间，远程 Job 不再次执行完整五阶段 Spark DAG；完整运行证据来自本机 WSL。
 
-当前没有验证常驻 Scheduler、Web UI、分布式 Executor、高可用元数据库、告警、SLA 或补数权限治理。面试时应表述为“完成 Airflow DAG 开发、导入验证与单机完整运行”，不能表述为“具备 Airflow 生产运维经验”。
+当前没有验证常驻 Scheduler、Web UI、分布式 Executor、高可用元数据库、告警、SLA 或补数权限治理。评审时应表述为“完成 Airflow DAG 开发、导入验证与单机完整运行”，不能表述为“具备 Airflow 生产运维经验”。

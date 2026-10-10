@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$DemoRoot = "build/portfolio-demo",
+    [string]$DemoRoot = "build/lakehouse-demo",
     [switch]$SkipTests
 )
 
@@ -58,7 +58,7 @@ try {
 
     $quality = Get-Content -LiteralPath $qualityReport -Raw | ConvertFrom-Json
     if ($quality.overall_status -ne "PASS") {
-        throw "Portfolio demo quality gate returned $($quality.overall_status)."
+        throw "Project acceptance quality gate returned $($quality.overall_status)."
     }
     & (Join-Path $PSScriptRoot "explain-spark-plans.ps1") `
         -Rows 1000 `
@@ -74,7 +74,7 @@ try {
         $plan.adaptive_skew_join.features.'skew=true' -lt 1 -or
         $plan.adaptive_skew_join.features.skewed -lt 1
     ) {
-        throw "Portfolio demo Spark plan gate did not observe the required operators."
+        throw "Project acceptance Spark plan gate did not observe the required operators."
     }
     if (-not $SkipTests) {
         & (Join-Path $PSScriptRoot "test-all.ps1")
