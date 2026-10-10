@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "dag_id": "bike_lakehouse_date_backfill",
+  "airflow_version": "3.1.6",
+  "python_version": "3.12.15",
+  "execution_mode": "DAG.test() with local SQLite metadata database",
+  "successful_backfill": {
+    "params": {
+      "target_date": "2026-10-01",
+      "input_path": "data/sample/trips.ndjson"
+    },
+    "state": "SUCCESS",
+    "tasks": [
+      {
+        "task_id": "backfill",
+        "state": "SUCCESS",
+        "try_number": 2
+      },
+      {
+        "task_id": "quality_gate",
+        "state": "SUCCESS",
+        "try_number": 1
+      },
+      {
+        "task_id": "validate_request",
+        "state": "SUCCESS",
+        "try_number": 1
+      }
+    ],
+    "manifest_status": "SUCCEEDED",
+    "quality_status": "PASS",
+    "quality_checks": 6
+  },
+  "failed_backfill": {
+    "params": {
+      "target_date": "2026-10-02",
+      "input_path": "data/sample/trips.ndjson"
+    },
+    "state": "FAILED",
+    "tasks": [
+      {
+        "task_id": "backfill",
+        "state": "FAILED",
+        "try_number": 2
+      },
+      {
+        "task_id": "quality_gate",
+        "state": "UPSTREAM_FAILED",
+        "try_number": 0
+      },
+      {
+        "task_id": "validate_request",
+        "state": "SUCCESS",
+        "try_number": 1
+      }
+    ],
+    "manifest_status": "FAILED",
+    "manifest_error_type": "ValueError",
+    "bronze_unchanged": true
+  },
+  "callback_summary": {
+    "retry_events": 2,
+    "failure_events": 1,
+    "events": [
+      {
+        "dag_id": "bike_lakehouse_date_backfill",
+        "event": "TASK_RETRY",
+        "exception_type": null,
+        "observed_at_utc": "2026-10-10T02:31:48.524+00:00",
+        "run_id": "manual__2026-10-10T02:31:45.476224+00:00",
+        "schema_version": 1,
+        "task_id": "backfill",
+        "try_number": 1
+      },
+      {
+        "dag_id": "bike_lakehouse_date_backfill",
+        "event": "TASK_RETRY",
+        "exception_type": null,
+        "observed_at_utc": "2026-10-10T02:33:25.363+00:00",
+        "run_id": "manual__2026-10-10T02:33:02.941966+00:00",
+        "schema_version": 1,
+        "task_id": "backfill",
+        "try_number": 1
+      },
+      {
+        "dag_id": "bike_lakehouse_date_backfill",
+        "event": "TASK_FAILURE",
+        "exception_type": null,
+        "observed_at_utc": "2026-10-10T02:33:47.154+00:00",
+        "run_id": "manual__2026-10-10T02:33:02.941966+00:00",
+        "schema_version": 1,
+        "task_id": "backfill",
+        "try_number": 2
+      }
+    ]
+  },
+  "claims_boundary": {
+    "verified": [
+      "typed manual-run parameters reached the backfill task",
+      "Airflow retried a controlled transient failure",
+      "a successful backfill passed the blocking quality gate",
+      "a date mismatch failed and emitted a sanitized callback audit",
+      "the failed backfill did not change Bronze files"
+    ],
+    "not_verified": [
+      "production alert delivery",
+      "concurrent backfill locking",
+      "approval or authorization workflow",
+      "production scheduler or SLA operation"
+    ]
+  }
+}
