@@ -1,4 +1,4 @@
-"""Execute the portfolio DAG with Airflow and save sanitized evidence."""
+"""Execute the lakehouse DAG with Airflow and save sanitized evidence."""
 
 from __future__ import annotations
 

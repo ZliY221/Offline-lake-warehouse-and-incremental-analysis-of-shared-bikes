@@ -1,4 +1,4 @@
-# 学习单元 14：Airflow 参数化补数与失败审计
+# Airflow 参数化补数与失败审计
 
 ## 为什么单独做补数 DAG
 
@@ -35,9 +35,9 @@ validate_request -> backfill -> quality_gate
 1. `2026-10-01` 配合对应源文件：首轮注入受控故障，Airflow 将任务置为 `up_for_retry`，第二次成功，质量门禁通过。
 2. `2026-10-02` 配合仅含 `2026-10-01` 数据的文件：两次尝试都被源日期校验拒绝，最终 DAG 失败，质量任务为 `UPSTREAM_FAILED`。
 
-失败场景执行前后会递归计算 Bronze 文件 SHA-256；只有指纹完全一致才生成 `PASS` 证据。结构化结果保存在 `evidence/airflow-backfill-local.json`，便于面试时从结论追溯到参数、任务状态和尝试次数。
+失败场景执行前后会递归计算 Bronze 文件 SHA-256；只有指纹完全一致才生成 `PASS` 证据。结构化结果保存在 `evidence/airflow-backfill-local.json`，便于评审时从结论追溯到参数、任务状态和尝试次数。
 
-## 面试表达边界
+## 能力边界
 
 可以说：完成 Airflow 3.1.6 参数化补数 DAG，在本机 SQLite 元数据库上验证原生重试、失败回调、阻塞式质量门禁和写前保护。
 

@@ -30,7 +30,7 @@ RUN_ROOT = Path(
     schedule=None,
     start_date=datetime(2026, 1, 1, tzinfo=timezone.utc),
     catchup=False,
-    tags=("portfolio", "pyspark", "lakehouse"),
+    tags=("lakehouse", "pyspark", "lakehouse"),
     description="Five-stage PySpark lakehouse build with a blocking quality gate",
 )
 def bike_lakehouse_full_build():

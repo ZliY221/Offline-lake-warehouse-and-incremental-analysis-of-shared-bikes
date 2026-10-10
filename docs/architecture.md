@@ -2,7 +2,7 @@
 
 ## 系统边界
 
-这是单机可复现的批处理作品集，不是云端或生产集群。输入是仓库内固定 NDJSON，计算引擎是 PySpark `local[2]`，存储格式是本地 Parquet，控制信息和验收报告使用 JSON。Windows 负责启动脚本，涉及 Parquet 的作业在 WSL/Linux 中运行。
+这是单机可复现的批处理项目，不是云端或生产集群。输入是仓库内固定 NDJSON，计算引擎是 PySpark `local[2]`，存储格式是本地 Parquet，控制信息和验收报告使用 JSON。Windows 负责启动脚本，涉及 Parquet 的作业在 WSL/Linux 中运行。
 
 ## 数据流
 
@@ -61,7 +61,7 @@ Bronze 与回填先写 `RUNNING` 控制记录，成功转为 `SUCCEEDED`，异�
 
 ## 可验证入口
 
-- `scripts/run-portfolio-demo.ps1`：隔离目录内重建全部层、执行质量门禁和测试；
+- `scripts/run-project-acceptance.ps1`：隔离目录内重建全部层、执行质量门禁和测试；
 - `scripts/test-all.ps1`：运行 32 项自动化测试；
 - `scripts/run-benchmark.ps1`：1 轮预热加 3 轮本机性能测量；
 - `scripts/explain-spark-plans.ps1`：对比 Sort-Merge、Broadcast Hash Join、AQE 分区合并与倾斜 Join 最终物理计划；

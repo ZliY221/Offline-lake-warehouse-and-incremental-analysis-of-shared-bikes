@@ -1,4 +1,4 @@
-# 学习单元 02：Silver 质量规则、去重与拒绝数据
+# Silver 质量规则、去重与拒绝数据
 
 ## 为什么不能只做 `dropDuplicates`
 

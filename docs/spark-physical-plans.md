@@ -1,8 +1,8 @@
-# 学习单元 10：Spark 物理计划、广播 Join 与 AQE
+# Spark 物理计划、广播 Join 与 AQE
 
 ## 为什么要保存执行计划证据
 
-会写 DataFrame 代码不等于能解释 Spark 如何执行。数据开发面试常追问 Join 是否发生 Shuffle、为什么广播小表、AQE 能做什么，以及 `spark.sql.shuffle.partitions` 如何影响任务数。本实验保存真实格式化物理计划，同时核对不同 Join 策略的聚合结果完全一致。
+会写 DataFrame 代码不等于能解释 Spark 如何执行。数据开发执行计划分析关注 Join 是否发生 Shuffle、为什么广播小表、AQE 能做什么，以及 `spark.sql.shuffle.partitions` 如何影响任务数。本实验保存真实格式化物理计划，同时核对不同 Join 策略的聚合结果完全一致。
 
 ## 三组受控计划
 
@@ -24,7 +24,7 @@
 输出默认写入被忽略的 `build/reports/`。仓库保存一次经核验的本机原始证据：
 
 - [`evidence/spark-plan-analysis-local.json`](../evidence/spark-plan-analysis-local.json)：环境、设置、结果、算子计数和格式化计划；
-- [`evidence/spark-plan-analysis-local.md`](../evidence/spark-plan-analysis-local.md)：便于面试前阅读的计划展开。
+- [`evidence/spark-plan-analysis-local.md`](../evidence/spark-plan-analysis-local.md)：便于发布前阅读的计划展开。
 
 计划中的表达式 ID 和 `plan_id` 已归一化，避免把一次 JVM 会话的递增编号误认为业务证据。
 
@@ -35,6 +35,6 @@
 - 本实验观察到了最终计划中的分区合并和倾斜拆分，但阈值是为 20,000 行合成数据刻意调低，不能直接复用为生产参数；
 - 当前没有 Spark History Server、生产集群或大规模数据倾斜证据。
 
-## 面试回答结构
+## 技术说明
 
 先说明业务输入规模与 Join 两侧角色，再展示基线 `SortMergeJoin` 计划；然后说明显式广播将维度复制到执行器，用 `BroadcastHashJoin` 避免事实表按 Join Key 重新分区；最后强调本实验验证了计划变化和结果等价，但没有把小样本计划当作性能提升数字。

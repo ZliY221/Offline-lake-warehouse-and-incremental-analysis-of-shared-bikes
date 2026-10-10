@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/ci.yml/badge.svg)](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/ci.yml)
 
-这是面向数据开发、数仓开发和大数据开发实习岗位的第二个独立作品集项目。它使用 PySpark 本地模式和 Parquet 演练批处理数仓，重点展示显式数据契约、Bronze/Silver/Gold 分层、分区增量处理、维度历史、数据质量与 SQL，而不是重复旗舰项目中的 Kafka/Flink 实时链路。
+本项目使用 PySpark 本地模式和 Parquet 实现批处理数仓，覆盖显式数据契约、Bronze/Silver/Gold 分层、分区增量处理、维度历史、数据质量与 SQL，并与 Kafka/Flink 实时链路保持独立。
 
-本项目是根据学习目标重新实现的新项目，不是对旧课程源码的恢复，也不宣称生产集群经验。
+本项目为独立实现，所有输入、处理逻辑、验证脚本和证据均保存在当前仓库中。
 
 ## 当前进度
 
@@ -60,7 +60,7 @@ bike-trip-lakehouse/
 ├─ dags/                     Airflow TaskFlow DAG
 ├─ data/sample/              固定脱敏正常样例
 ├─ data/quality/             固定质量问题演示批次
-├─ docs/                     需求、架构和学习材料
+├─ docs/                     需求、架构和技术文档
 ├─ evidence/                 经核验的原始性能证据
 ├─ scripts/                  环境探测、生成和测试脚本
 ├─ src/bike_lakehouse/       分层作业、控制流程、质量与基准代码
@@ -254,13 +254,13 @@ DAG 使用 `target_date` 和仓库 `data/` 目录内的 `input_path` 两个运�
 
 这些证据是 Airflow 3.1.6、SQLite 元数据库和 Spark `local[2]` 的单机 `DAG.test()` 验收；本地 JSONL 回调审计不等同于邮件或企业告警，也未验证长期运行的 Scheduler、分布式 Executor、高可用元数据库、并发回填、权限审批或生产 SLA。
 
-## 一键作品集验收
+## 一键项目验收
 
 ```powershell
-./scripts/run-portfolio-demo.ps1
+./scripts/run-project-acceptance.ps1
 ```
 
-脚本使用隔离的 `build/portfolio-demo/` 输出目录，依次重建所有数据层、执行 6 项跨层质量门禁、验证 Spark 物理计划并运行包含 UI REST 与编排语义的全部测试，最终输出机器可读摘要。架构、数据粒度和约束见 [`docs/architecture.md`](docs/architecture.md)，面试讲解与追问准备见 [`docs/interview-guide.md`](docs/interview-guide.md)，公开仓库与远程 CI 的验收证据见 [`docs/publishing-checklist.md`](docs/publishing-checklist.md)。
+脚本使用隔离的 `build/project-acceptance/` 输出目录，依次重建所有数据层、执行 6 项跨层质量门禁、验证 Spark 物理计划并运行包含 UI REST 与编排语义的全部测试，最终输出机器可读摘要。架构、数据粒度和约束见 [`docs/architecture.md`](docs/architecture.md)，公开仓库与远程 CI 的验收证据见 [`docs/publishing-checklist.md`](docs/publishing-checklist.md)。
 
 ## 当前边界
 
