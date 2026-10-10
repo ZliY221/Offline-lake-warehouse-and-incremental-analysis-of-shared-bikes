@@ -27,6 +27,7 @@
 - [x] 通过 Spark UI `/api/v1` 保存 Job、Stage 和 Task 级 Shuffle、耗时、GC 与 Spill 指标。
 - [x] 使用真实五阶段 Spark 链路验证依赖编排、失败重试、日志哈希与断点恢复。
 - [x] 使用 Airflow 3.1.6 TaskFlow DAG 运行同一五阶段任务图，并验证原生重试与阻塞式质量门禁。
+- [x] 新增带类型化运行参数的 Airflow 日期回填 DAG，验证成功重试、失败回调审计和写前保护。
 
 ## 为什么单独建仓
 
@@ -188,7 +189,7 @@ Gold 先按行程业务日期分别关联起点、终点在当日有效的 SCD2 
 ./scripts/test-all.ps1
 ```
 
-当前 30 项测试覆盖确定性、契约、金额/时间边界、匿名键格式与隐私字段、显式 Spark Schema、Parquet 类型、同分区幂等重跑、跨日期分区保留、批次状态与失败记录、单日期回填、跨分区主键保护、cohort 依赖传播、质量分流、SCD2、Gold 时态关联与留存、真实 Spark 物理计划、Spark UI REST 指标，以及共享任务定义、依赖、重试、恢复和任务图校验。GitHub CI 另有独立 Airflow Job，安装受官方约束文件锁定的 Airflow 3.1.6 并验证 DAG 导入、5 个任务依赖和每任务一次重试配置。
+当前 32 项测试覆盖确定性、契约、金额/时间边界、匿名键格式与隐私字段、显式 Spark Schema、Parquet 类型、同分区幂等重跑、跨日期分区保留、批次状态与失败记录、单日期回填、跨分区主键保护、cohort 依赖传播、质量分流、SCD2、Gold 时态关联与留存、真实 Spark 物理计划、Spark UI REST 指标，以及共享任务定义、依赖、重试、恢复、任务图、回调最小披露和输入路径约束。GitHub CI 另有独立 Airflow Job，安装受官方约束文件锁定的 Airflow 3.1.6，并验证完整构建与日期回填两个 DAG 的导入、参数、依赖和重试配置。
 
 ## Spark 执行计划证据
 
@@ -242,7 +243,16 @@ Gold 先按行程业务日期分别关联起点、终点在当日有效的 SCD2 
 
 `dags/bike_lakehouse_airflow.py` 使用 TaskFlow API 定义 5 个任务，每个任务允许一次重试。DAG 与本地编排器都从 `pipeline_definition.py` 读取相同命令和依赖。实际 `DAG.test()` 运行中，Silver 首次进入 `up_for_retry`，第二次成功；Gold 等待 Silver 与站点维表成功，最终质量门禁通过，DAG Run 为 `SUCCESS`。证据见 [`evidence/airflow-dag-test-local.json`](evidence/airflow-dag-test-local.json) 和 [`evidence/airflow-dag-test-local.md`](evidence/airflow-dag-test-local.md)。
 
-该证据是 Airflow 3.1.6、SQLite 元数据库和 Spark `local[2]` 的单机完整 DAG 验收；它不等同于长期运行的 Scheduler、分布式 Executor、高可用元数据库、告警或生产 SLA。
+参数化日期回填另提供 `bike_lakehouse_date_backfill` DAG：
+
+```powershell
+# 先完成一次全量基线，再分别执行有效与无效日期回填
+./scripts/run-airflow-backfill.ps1
+```
+
+DAG 使用 `target_date` 和仓库 `data/` 目录内的 `input_path` 两个运行参数，先校验日期格式、文件存在性和路径边界，再执行回填与阻塞式质量门禁。验收中，有效回填首次受控失败、第二次成功并通过 6 项质量检查；日期不匹配的回填耗尽两次尝试后失败，质量任务为 `UPSTREAM_FAILED`，失败前后 Bronze 文件 SHA-256 指纹完全一致。回调审计只保存事件类型、DAG/任务/Run ID、尝试次数，以及 Airflow 上下文可提供的异常类型，不复制异常正文或业务数据。证据见 [`evidence/airflow-backfill-local.json`](evidence/airflow-backfill-local.json) 和 [`evidence/airflow-backfill-local.md`](evidence/airflow-backfill-local.md)。
+
+这些证据是 Airflow 3.1.6、SQLite 元数据库和 Spark `local[2]` 的单机 `DAG.test()` 验收；本地 JSONL 回调审计不等同于邮件或企业告警，也未验证长期运行的 Scheduler、分布式 Executor、高可用元数据库、并发回填、权限审批或生产 SLA。
 
 ## 一键作品集验收
 
@@ -256,5 +266,5 @@ Gold 先按行程业务日期分别关联起点、终点在当日有效的 SCD2 
 
 - Spark 当前只在单机 `local[2]` 模式运行，不能表述为生产集群经验。
 - Windows 原生 Spark 仅做过 DataFrame 聚合验证；涉及 Hadoop 文件系统的 Parquet 测试和构建统一在 WSL/Linux 执行，CI 也使用 Linux。
-- Bronze、批次清单、受控分区回填、行程 Silver、站点 SCD2、Gold 日指标、热门路线、cohort 留存、跨层质量报告和性能证据均已完成。回填已做到 Silver、日指标、路线和 cohort 的受影响分区写入；cohort 计算仍进行全量 Silver 扫描。项目已完成 Airflow 本地 DAG 验收，但没有跨作业事务提交、长期运行的生产 Scheduler、分布式 Executor 或事务湖仓能力。
+- Bronze、批次清单、受控分区回填、行程 Silver、站点 SCD2、Gold 日指标、热门路线、cohort 留存、跨层质量报告和性能证据均已完成。回填已做到 Silver、日指标、路线和 cohort 的受影响分区写入；cohort 计算仍进行全量 Silver 扫描。项目已完成 Airflow 完整构建与参数化回填的本地 DAG 验收，但没有跨作业事务提交、并发回填锁、长期运行的生产 Scheduler、分布式 Executor 或事务湖仓能力。
 - 没有脚本和原始报告前，不写吞吐、延迟或节省比例。

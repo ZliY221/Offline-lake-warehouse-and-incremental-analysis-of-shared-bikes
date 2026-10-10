@@ -31,6 +31,7 @@ git log --oneline -10
 - `evidence/spark-stage-metrics-local.json` 包含目标 Job、完成 Stage、Task 分布和非零 Shuffle 读写，且不得保存本机用户路径；
 - `evidence/orchestration-retry-local.json` 包含 Silver 失败/成功两次尝试、独立日志哈希、最终质量门禁成功和恢复跳过事件；
 - `evidence/airflow-dag-test-local.json` 包含 Airflow 版本、5 个任务的依赖/状态/尝试次数、Silver 两次尝试和 6 项质量门禁成功；
+- `evidence/airflow-backfill-local.json` 包含类型化回填参数、成功/失败任务状态、重试与最终失败回调计数，以及失败补数前后 Bronze 文件不变结论；
 - 仓库内没有简历 PDF、证书原图、学籍验证码、手机号、邮箱密钥或 `.env`。
 
 ## 当前审计结果
@@ -95,5 +96,6 @@ git push origin main
 - 对应提交：`8d9c7cf701907ee6120891232b767c7a397b427d`；28 项测试通过，故障注入验证 Silver 首次失败后重试成功，恢复运行按任务图指纹跳过 5 个已成功任务。该实现是本地顺序编排语义，不作为 Airflow、Dagster 或生产调度经验。
 - Airflow DAG 适配成功 CI：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/runs/38015494396>
 - 对应提交：`e5c51745d21ac421e4695dae6b9e0d211d2203bb`；远程 Airflow 3.1.6 Job 在 26 秒内完成 DAG 导入、5 任务依赖和重试配置验证，Spark/Python Job 通过 30 项测试。本机 `DAG.test()` 另实际执行全部 PySpark 阶段，Silver 两次尝试后 DAG Run 与 6 项质量门禁均成功；不外推为生产 Airflow 运维经验。
+- 参数化 Airflow 日期回填：本机 `DAG.test()` 已验证有效请求重试后成功、6 项质量门禁通过；错误日期请求耗尽重试后失败、记录最小化回调审计，且 Bronze 文件指纹不变。功能提交与远程 CI 链接将在发布后补充。
 - 发布与首次成功日期：2026 年 10 月 4 日
 - 若 CI 与本机结果不同，记录原因和修复提交。
