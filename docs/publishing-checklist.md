@@ -30,6 +30,7 @@ git log --oneline -10
 - `evidence/spark-plan-analysis-local.json` 同时包含 Sort-Merge、显式 Broadcast Hash Join、AQE 最终计划、分区合并与倾斜 Join 证据；
 - `evidence/spark-stage-metrics-local.json` 包含目标 Job、完成 Stage、Task 分布和非零 Shuffle 读写，且不得保存本机用户路径；
 - `evidence/orchestration-retry-local.json` 包含 Silver 失败/成功两次尝试、独立日志哈希、最终质量门禁成功和恢复跳过事件；
+- `evidence/airflow-dag-test-local.json` 包含 Airflow 版本、5 个任务的依赖/状态/尝试次数、Silver 两次尝试和 6 项质量门禁成功；
 - 仓库内没有简历 PDF、证书原图、学籍验证码、手机号、邮箱密钥或 `.env`。
 
 ## 当前审计结果
@@ -53,7 +54,7 @@ git push origin main
 
 推送后检查：
 
-1. GitHub Actions 的 Python/Spark 测试 Job 成功；
+1. GitHub Actions 的 Python/Spark 测试与 Airflow DAG 导入 Job 均成功；
 2. README Mermaid 架构图可正常渲染；
 3. 相对链接能打开架构、面试指南和性能 JSON；
 4. 仓库 About、Topics 和简介已经填写；
@@ -92,5 +93,7 @@ git push origin main
 - 对应提交：`c1efbbdd34f082dc0a2f0eb1dfce0125a2c89f3e`；25 项测试通过，实时采集目标 Job、完成 Stage、任务耗时、Shuffle、GC 与 Spill 指标；本机静态网页受中文路径限制，不列为已验证证据。
 - 可恢复五阶段编排成功 CI：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/runs/37284868111>
 - 对应提交：`8d9c7cf701907ee6120891232b767c7a397b427d`；28 项测试通过，故障注入验证 Silver 首次失败后重试成功，恢复运行按任务图指纹跳过 5 个已成功任务。该实现是本地顺序编排语义，不作为 Airflow、Dagster 或生产调度经验。
+- Airflow DAG 适配成功 CI：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/runs/38015494396>
+- 对应提交：`e5c51745d21ac421e4695dae6b9e0d211d2203bb`；远程 Airflow 3.1.6 Job 在 26 秒内完成 DAG 导入、5 任务依赖和重试配置验证，Spark/Python Job 通过 30 项测试。本机 `DAG.test()` 另实际执行全部 PySpark 阶段，Silver 两次尝试后 DAG Run 与 6 项质量门禁均成功；不外推为生产 Airflow 运维经验。
 - 发布与首次成功日期：2026 年 10 月 4 日
 - 若 CI 与本机结果不同，记录原因和修复提交。
