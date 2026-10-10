@@ -12,121 +12,13 @@ from .orchestration import (
     TaskSpec,
     write_orchestration_evidence,
 )
+from .pipeline_definition import build_pipeline_commands
 
 
 def _tasks(run_root: Path) -> list[TaskSpec]:
-    lakehouse = run_root / "lakehouse"
-    bronze = lakehouse / "bronze" / "trips"
-    silver_valid = lakehouse / "silver" / "trips_valid"
-    silver_rejected = lakehouse / "silver" / "trips_rejected"
-    silver_duplicates = lakehouse / "silver" / "trips_duplicates"
-    station_dimension = lakehouse / "dim" / "stations"
-    station_rejected = lakehouse / "dim" / "stations_rejected"
-    daily_metrics = lakehouse / "gold" / "daily_metrics"
-    popular_routes = lakehouse / "gold" / "popular_routes"
-    cohort_retention = lakehouse / "gold" / "cohort_retention"
-    bronze_manifests = lakehouse / "control" / "bronze_batches"
-    backfill_manifests = lakehouse / "control" / "date_backfills"
-    quality_report = run_root / "reports" / "data-quality.json"
-
-    def command(module: str, *arguments: object) -> tuple[str, ...]:
-        return ("python3", "-m", module, *(str(argument) for argument in arguments))
-
     return [
-        TaskSpec(
-            "bronze",
-            (),
-            command(
-                "bike_lakehouse.bronze_cli",
-                "--input",
-                "data/sample/trips.ndjson",
-                "--output",
-                bronze,
-                "--ingestion-date",
-                "2026-10-01",
-                "--manifest",
-                bronze_manifests,
-            ),
-        ),
-        TaskSpec(
-            "silver",
-            ("bronze",),
-            command(
-                "bike_lakehouse.silver_cli",
-                "--bronze",
-                bronze,
-                "--valid",
-                silver_valid,
-                "--rejected",
-                silver_rejected,
-                "--duplicates",
-                silver_duplicates,
-            ),
-        ),
-        TaskSpec(
-            "station_dimension",
-            (),
-            command(
-                "bike_lakehouse.station_dimension_cli",
-                "--input",
-                "data/sample/stations.ndjson",
-                "--input",
-                "data/sample/stations-2026-10-02.ndjson",
-                "--dimension",
-                station_dimension,
-                "--rejected",
-                station_rejected,
-            ),
-        ),
-        TaskSpec(
-            "gold",
-            ("silver", "station_dimension"),
-            command(
-                "bike_lakehouse.gold_cli",
-                "--silver-trips",
-                silver_valid,
-                "--station-dimension",
-                station_dimension,
-                "--daily-metrics",
-                daily_metrics,
-                "--popular-routes",
-                popular_routes,
-                "--cohort-retention",
-                cohort_retention,
-            ),
-        ),
-        TaskSpec(
-            "quality_gate",
-            ("gold",),
-            command(
-                "bike_lakehouse.quality_report_cli",
-                "--bronze",
-                bronze,
-                "--silver-valid",
-                silver_valid,
-                "--silver-rejected",
-                silver_rejected,
-                "--silver-duplicates",
-                silver_duplicates,
-                "--station-dimension",
-                station_dimension,
-                "--station-rejected",
-                station_rejected,
-                "--gold-daily-metrics",
-                daily_metrics,
-                "--gold-popular-routes",
-                popular_routes,
-                "--gold-cohort-retention",
-                cohort_retention,
-                "--bronze-manifest",
-                bronze_manifests,
-                "--backfill-manifest",
-                backfill_manifests,
-                "--output",
-                quality_report,
-                "--fail-on-error",
-            ),
-        ),
+        TaskSpec(spec.name, spec.dependencies, spec.argv())
+        for spec in build_pipeline_commands(run_root)
     ]
 
 

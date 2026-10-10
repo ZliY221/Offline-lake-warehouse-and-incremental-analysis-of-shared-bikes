@@ -30,3 +30,28 @@ jobs:
           PYTHONPATH: src
           SPARK_LOCAL_IP: 127.0.0.1
         run: python -W error -m unittest discover -s tests -v
+
+  airflow-dag-import:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: .github/workflows/ci.yml
+      - name: Install constrained Airflow
+        run: |
+          python -m pip install --disable-pip-version-check \
+            "apache-airflow==3.1.6" \
+            --constraint \
+            "https://raw.githubusercontent.com/apache/airflow/constraints-3.1.6/constraints-3.12.txt"
+      - name: Validate DAG import and contract
+        env:
+          AIRFLOW_HOME: /tmp/bike-lakehouse-airflow
+          AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+          BIKE_LAKEHOUSE_REPO_ROOT: ${{ github.workspace }}
+          BIKE_LAKEHOUSE_AIRFLOW_RUN_ROOT: /tmp/bike-lakehouse-airflow-run
+          PYTHONPATH: src
+        run: python scripts/validate_airflow_dag.py

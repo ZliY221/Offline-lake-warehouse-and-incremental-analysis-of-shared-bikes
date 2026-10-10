@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "dag_id": "bike_lakehouse_full_build",
+  "dag_run_state": "SUCCESS",
+  "airflow_version": "3.1.6",
+  "python_version": "3.12.15",
+  "execution_mode": "DAG.test() with local SQLite metadata database",
+  "failure_injection": "silver",
+  "tasks": [
+    {
+      "task_id": "bronze",
+      "upstream_task_ids": [],
+      "state": "SUCCESS",
+      "try_number": 1
+    },
+    {
+      "task_id": "gold",
+      "upstream_task_ids": [
+        "silver",
+        "station_dimension"
+      ],
+      "state": "SUCCESS",
+      "try_number": 1
+    },
+    {
+      "task_id": "quality_gate",
+      "upstream_task_ids": [
+        "gold"
+      ],
+      "state": "SUCCESS",
+      "try_number": 1
+    },
+    {
+      "task_id": "silver",
+      "upstream_task_ids": [
+        "bronze"
+      ],
+      "state": "SUCCESS",
+      "try_number": 2
+    },
+    {
+      "task_id": "station_dimension",
+      "upstream_task_ids": [],
+      "state": "SUCCESS",
+      "try_number": 1
+    }
+  ],
+  "quality_report": {
+    "overall_status": "PASS",
+    "check_count": 6,
+    "bronze_rows": 20,
+    "silver_valid_rows": 20
+  },
+  "claims_boundary": {
+    "verified": [
+      "Airflow parsed the five-task DAG",
+      "Airflow executed all real PySpark stages",
+      "Airflow retried the controlled first failure",
+      "the blocking quality gate passed"
+    ],
+    "not_verified": [
+      "production scheduler operation",
+      "distributed executor behavior",
+      "cluster Spark fault tolerance",
+      "production SLA or alerting"
+    ]
+  }
+}
