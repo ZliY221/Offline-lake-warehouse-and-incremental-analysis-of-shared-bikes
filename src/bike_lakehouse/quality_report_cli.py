@@ -33,6 +33,11 @@ def main() -> None:
         type=date.fromisoformat,
         help="fail when the newest Bronze ingestion_date is older than this date",
     )
+    parser.add_argument(
+        "--required-first-ingestion-date",
+        type=date.fromisoformat,
+        help="fail when any Bronze partition is missing from this date through the required latest date",
+    )
     parser.add_argument("--fail-on-error", action="store_true")
     args = parser.parse_args()
     spark = create_local_spark("bike-trip-quality-report", Path("build/spark-warehouse"))
@@ -55,6 +60,7 @@ def main() -> None:
             max_rejected_ratio=args.max_rejected_ratio,
             max_duplicate_ratio=args.max_duplicate_ratio,
             required_latest_ingestion_date=args.required_latest_ingestion_date,
+            required_first_ingestion_date=args.required_first_ingestion_date,
         )
         print(
             json.dumps(

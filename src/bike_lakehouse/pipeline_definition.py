@@ -131,6 +131,8 @@ def build_pipeline_commands(run_root: Path) -> tuple[PipelineCommand, ...]:
                 quality_report,
                 "--required-latest-ingestion-date",
                 "2026-10-01",
+                "--required-first-ingestion-date",
+                "2026-10-01",
                 "--fail-on-error",
             ),
         ),

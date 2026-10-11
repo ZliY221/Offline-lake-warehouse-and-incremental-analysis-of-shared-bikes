@@ -25,6 +25,8 @@ class PipelineDefinitionTests(unittest.TestCase):
         self.assertIn("--fail-on-error", quality.arguments)
         freshness_index = quality.arguments.index("--required-latest-ingestion-date")
         self.assertEqual("2026-10-01", quality.arguments[freshness_index + 1])
+        continuity_index = quality.arguments.index("--required-first-ingestion-date")
+        self.assertEqual("2026-10-01", quality.arguments[continuity_index + 1])
 
     def test_managed_orchestrator_uses_the_canonical_commands(self) -> None:
         run_root = Path("build/test-run")
