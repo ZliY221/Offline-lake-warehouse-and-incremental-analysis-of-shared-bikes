@@ -43,3 +43,9 @@
 `bike_lakehouse.repair_cli plan` 扫描 Bronze 物理分区，并在最长 366 天的显式日期范围内生成缺口清单。来源目录按日期提供文件名和 SHA-256；存在可信来源的动作标记为 `READY`，没有来源的日期标记为 `BLOCKED_SOURCE_MISSING`。计划只保存文件名，不接受目录穿越路径，也不会自动执行回填。
 
 完成计划中的单日回填后，`bike_lakehouse.repair_cli audit` 同时验证目标分区已经存在，并且控制目录内具有目标日期与来源 SHA-256 完全匹配的 `SUCCEEDED` 回填清单。两项证据缺一不可，审计状态才为 `COMPLETE`。
+
+## 计划执行与恢复
+
+`repair_cli execute` 在启动 Spark 前验证计划版本、动作编号、来源路径和 SHA-256。任一动作缺少来源或指纹不匹配时，整批保持 `BLOCKED`，不会先执行部分动作。`--dry-run` 输出 `WOULD_EXECUTE` 清单，不改写湖仓。
+
+正式执行按计划顺序调用受控单日期回填。目标分区与同来源成功清单同时存在时标记为 `SKIPPED_ALREADY_COMPLETE`，因此失败后的同计划重跑只处理未完成动作。首个执行错误会终止后续动作，并在报告中保存错误类型和受限长度消息；最终仍应运行 `repair_cli audit` 核对分区与回填清单。
