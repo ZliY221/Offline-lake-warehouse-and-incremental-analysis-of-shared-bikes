@@ -9,7 +9,42 @@ import re
 from pathlib import Path
 from typing import Any
 
+from .batch_manifest import fingerprint_file
+
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+SOURCE_NAME_PATTERN = re.compile(r"^trips-(?P<date>\d{4}-\d{2}-\d{2})\.ndjson$")
+
+
+def build_source_catalog(source_root: Path) -> dict[str, Any]:
+    """Fingerprint conventionally named repair inputs without exposing row contents."""
+    source_root = source_root.resolve()
+    if not source_root.is_dir():
+        raise ValueError(f"source root does not exist: {source_root}")
+    sources: list[dict[str, Any]] = []
+    seen_dates: set[str] = set()
+    for source_path in sorted(source_root.glob("*.ndjson"), key=lambda path: path.name):
+        match = SOURCE_NAME_PATTERN.fullmatch(source_path.name)
+        if match is None:
+            raise ValueError(f"unexpected repair source name: {source_path.name}")
+        ingestion_date = date.fromisoformat(match.group("date")).isoformat()
+        if ingestion_date in seen_dates:
+            raise ValueError(f"duplicate repair source date: {ingestion_date}")
+        seen_dates.add(ingestion_date)
+        digest, source_bytes = fingerprint_file(source_path)
+        sources.append(
+            {
+                "ingestion_date": ingestion_date,
+                "source_name": source_path.name,
+                "source_sha256": digest,
+                "source_bytes": source_bytes,
+            }
+        )
+    return {
+        "catalog_version": "1.0",
+        "status": "READY",
+        "source_count": len(sources),
+        "sources": sources,
+    }
 
 
 def _required_dates(first: date, latest: date) -> list[date]:

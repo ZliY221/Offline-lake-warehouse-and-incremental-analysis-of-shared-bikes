@@ -42,6 +42,16 @@
 
 `bike_lakehouse.repair_cli plan` 扫描 Bronze 物理分区，并在最长 366 天的显式日期范围内生成缺口清单。来源目录按日期提供文件名和 SHA-256；存在可信来源的动作标记为 `READY`，没有来源的日期标记为 `BLOCKED_SOURCE_MISSING`。计划只保存文件名，不接受目录穿越路径，也不会自动执行回填。
 
+来源清单可直接从受控目录生成：
+
+```powershell
+./scripts/build-repair-source-catalog.ps1 `
+  -SourceRoot data/repair `
+  -Output build/repair/source-catalog.json
+```
+
+目录中的 NDJSON 文件必须使用 `trips-YYYY-MM-DD.ndjson` 命名。生成器按日期排序并保存文件名、字节数和 SHA-256，不读取或复制业务行内容；不符合约定的文件会阻止清单生成，避免文件被静默遗漏。
+
 完成计划中的单日回填后，`bike_lakehouse.repair_cli audit` 同时验证目标分区已经存在，并且控制目录内具有目标日期与来源 SHA-256 完全匹配的 `SUCCEEDED` 回填清单。两项证据缺一不可，审计状态才为 `COMPLETE`。
 
 ## 计划执行与恢复

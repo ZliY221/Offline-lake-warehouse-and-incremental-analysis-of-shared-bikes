@@ -10,13 +10,22 @@ from pathlib import Path
 from .backfill import run_date_backfill
 from .batch_manifest import write_json_atomic
 from .repair_execution import execute_repair_plan
-from .repair_plan import audit_repair_plan, build_repair_plan, discover_partitions, load_manifest_directory
+from .repair_plan import (
+    audit_repair_plan,
+    build_repair_plan,
+    build_source_catalog,
+    discover_partitions,
+    load_manifest_directory,
+)
 from .spark import create_local_spark
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Plan or audit missing Bronze partition repairs")
     subparsers = parser.add_subparsers(dest="command", required=True)
+    catalog = subparsers.add_parser("catalog")
+    catalog.add_argument("--source-root", type=Path, required=True)
+    catalog.add_argument("--output", type=Path, required=True)
     plan = subparsers.add_parser("plan")
     plan.add_argument("--bronze", type=Path, required=True)
     plan.add_argument("--required-first-date", type=date.fromisoformat, required=True)
@@ -45,7 +54,9 @@ def main() -> None:
     execute.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
-    if args.command == "plan":
+    if args.command == "catalog":
+        report = build_source_catalog(args.source_root)
+    elif args.command == "plan":
         catalog = json.loads(args.source_catalog.read_text(encoding="utf-8"))
         report = build_repair_plan(
             discover_partitions(args.bronze), args.required_first_date, args.required_latest_date, catalog.get("sources", [])
