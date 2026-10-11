@@ -17,7 +17,9 @@ param(
     [ValidateRange(0.0, 1.0)]
     [double]$MaxDuplicateRatio = 0.05,
     [ValidatePattern('^\d{4}-\d{2}-\d{2}$')]
-    [string]$RequiredLatestIngestionDate = "2026-10-01"
+    [string]$RequiredLatestIngestionDate = "2026-10-01",
+    [ValidatePattern('^\d{4}-\d{2}-\d{2}$')]
+    [string]$RequiredFirstIngestionDate = "2026-10-01"
 )
 
 $ErrorActionPreference = "Stop"
@@ -44,5 +46,6 @@ $distro = Get-WslDistroName
     --output $OutputPath `
     --max-rejected-ratio $MaxRejectedRatio `
     --max-duplicate-ratio $MaxDuplicateRatio `
-    --required-latest-ingestion-date $RequiredLatestIngestionDate
+    --required-latest-ingestion-date $RequiredLatestIngestionDate `
+    --required-first-ingestion-date $RequiredFirstIngestionDate
 if ($LASTEXITCODE -ne 0) { throw "Quality report build failed in WSL." }

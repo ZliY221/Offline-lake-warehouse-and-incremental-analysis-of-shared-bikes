@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from datetime import date
+from datetime import date, timedelta
 import json
 from pathlib import Path
 from typing import Any
@@ -42,6 +42,34 @@ def evaluate_partition_freshness(
     )
 
 
+def evaluate_partition_continuity(
+    partition_dates: set[str], required_first_date: date, required_latest_date: date
+) -> dict[str, Any]:
+    """Check that every required calendar date has a Bronze partition."""
+    if required_first_date > required_latest_date:
+        raise ValueError("required_first_date must not be later than required_latest_date")
+    span_days = (required_latest_date - required_first_date).days + 1
+    if span_days > 366:
+        raise ValueError("required partition continuity range must not exceed 366 days")
+    available: set[date] = set()
+    for value in partition_dates:
+        try:
+            available.add(date.fromisoformat(value))
+        except ValueError as error:
+            raise ValueError(f"invalid Bronze ingestion_date partition: {value}") from error
+    expected = {required_first_date + timedelta(days=offset) for offset in range(span_days)}
+    missing = sorted(expected - available)
+    return _check(
+        "bronze_partition_continuity",
+        not missing,
+        required_first_ingestion_date=required_first_date.isoformat(),
+        required_latest_ingestion_date=required_latest_date.isoformat(),
+        expected_partition_count=len(expected),
+        missing_partition_count=len(missing),
+        missing_ingestion_dates=[value.isoformat() for value in missing],
+    )
+
+
 def _manifest_summary(*directories: Path) -> dict[str, Any]:
     records: list[dict[str, Any]] = []
     for directory in directories:
@@ -76,6 +104,7 @@ def build_quality_report(
     max_rejected_ratio: float = 0.05,
     max_duplicate_ratio: float = 0.05,
     required_latest_ingestion_date: date | None = None,
+    required_first_ingestion_date: date | None = None,
 ) -> dict[str, Any]:
     """Build and persist a machine-readable report with cross-layer invariants."""
     from pyspark.sql import Window, functions as F
@@ -251,6 +280,19 @@ def build_quality_report(
             0,
             evaluate_partition_freshness(
                 set(bronze_partitions), required_latest_ingestion_date
+            ),
+        )
+    if required_first_ingestion_date is not None:
+        if required_latest_ingestion_date is None:
+            raise ValueError(
+                "required_latest_ingestion_date is required when continuity is configured"
+            )
+        checks.insert(
+            1,
+            evaluate_partition_continuity(
+                set(bronze_partitions),
+                required_first_ingestion_date,
+                required_latest_ingestion_date,
             ),
         )
     manifests = _manifest_summary(bronze_manifest_path, backfill_manifest_path)
