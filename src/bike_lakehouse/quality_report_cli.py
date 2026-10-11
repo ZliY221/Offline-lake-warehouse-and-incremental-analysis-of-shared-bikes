@@ -25,6 +25,8 @@ def main() -> None:
     parser.add_argument("--backfill-manifest", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--route-limit", type=int, default=3)
+    parser.add_argument("--max-rejected-ratio", type=float, default=0.05)
+    parser.add_argument("--max-duplicate-ratio", type=float, default=0.05)
     parser.add_argument("--fail-on-error", action="store_true")
     args = parser.parse_args()
     spark = create_local_spark("bike-trip-quality-report", Path("build/spark-warehouse"))
@@ -44,6 +46,8 @@ def main() -> None:
             backfill_manifest_path=args.backfill_manifest,
             output_path=args.output,
             route_limit=args.route_limit,
+            max_rejected_ratio=args.max_rejected_ratio,
+            max_duplicate_ratio=args.max_duplicate_ratio,
         )
         print(
             json.dumps(

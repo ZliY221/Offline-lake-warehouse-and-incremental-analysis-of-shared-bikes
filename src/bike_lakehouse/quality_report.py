@@ -52,9 +52,18 @@ def build_quality_report(
     backfill_manifest_path: Path,
     output_path: Path,
     route_limit: int = 3,
+    max_rejected_ratio: float = 0.05,
+    max_duplicate_ratio: float = 0.05,
 ) -> dict[str, Any]:
     """Build and persist a machine-readable report with cross-layer invariants."""
     from pyspark.sql import Window, functions as F
+
+    for name, value in (
+        ("max_rejected_ratio", max_rejected_ratio),
+        ("max_duplicate_ratio", max_duplicate_ratio),
+    ):
+        if isinstance(value, bool) or not 0 <= value <= 1:
+            raise ValueError(f"{name} must be between 0 and 1")
 
     bronze = spark.read.parquet(str(_require_directory(bronze_path, "Bronze trip")))
     valid = spark.read.parquet(str(_require_directory(silver_valid_path, "Silver valid")))
@@ -112,6 +121,9 @@ def build_quality_report(
         + counts["silver_rejected_rows"]
         + counts["silver_duplicate_rows"]
     )
+    denominator = counts["bronze_rows"] or 1
+    rejected_ratio = counts["silver_rejected_rows"] / denominator
+    duplicate_ratio = counts["silver_duplicate_rows"] / denominator
     current_version_violations = (
         dimension.groupBy("station_id")
         .agg(F.sum(F.col("is_current").cast("int")).alias("current_count"))
@@ -166,6 +178,22 @@ def build_quality_report(
             counts["bronze_rows"] == silver_total,
             bronze_rows=counts["bronze_rows"],
             reconciled_silver_rows=silver_total,
+        ),
+        _check(
+            "silver_rejected_ratio",
+            rejected_ratio <= max_rejected_ratio,
+            observed_ratio=round(rejected_ratio, 6),
+            maximum_ratio=max_rejected_ratio,
+            rejected_rows=counts["silver_rejected_rows"],
+            bronze_rows=counts["bronze_rows"],
+        ),
+        _check(
+            "silver_duplicate_ratio",
+            duplicate_ratio <= max_duplicate_ratio,
+            observed_ratio=round(duplicate_ratio, 6),
+            maximum_ratio=max_duplicate_ratio,
+            duplicate_rows=counts["silver_duplicate_rows"],
+            bronze_rows=counts["bronze_rows"],
         ),
         _check(
             "station_one_current_version",

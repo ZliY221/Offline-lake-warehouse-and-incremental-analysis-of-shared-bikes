@@ -19,7 +19,7 @@
 - [x] 实现 Gold 日指标、SCD2 时态关联和分区 Top 路线。
 - [x] 为 Bronze 摄取加入确定性批次 ID、文件指纹和原子状态清单。
 - [x] 实现单日期预检、跨分区主键保护、Silver/Gold 受影响分区重算，以及 cohort 旧/新归属日期依赖传播。
-- [x] 实现跨层行数、SCD2 区间、Gold 汇总和路线排名质量报告。
+- [x] 实现跨层行数、Silver 拒绝/重复率、SCD2 区间、Gold 汇总和路线排名质量门禁。
 - [x] 完成固定输入、预热加三轮测量的本机端到端性能证据。
 - [x] 使用纯合成匿名骑行者键实现 cohort 留存分析。
 - [x] 完成 Sort-Merge Join、显式 Broadcast Hash Join 与 AQE 的真实格式化物理计划证据。
@@ -171,7 +171,7 @@ Gold 先按行程业务日期分别关联起点、终点在当日有效的 SCD2 
 ./scripts/build-quality-report.ps1
 ```
 
-报告写入 `build/reports/data-quality.json`，检查 Bronze 行数能否由 Silver 合法、拒绝和重复数据完整对账，每个站点是否只有一个当前版本、SCD2 区间是否连续，Gold 聚合行程数是否等于合法 Silver 行程数，Top 路线排名是否满足范围和唯一性约束，以及 cohort 留存率、人数和第 0 天基线是否合法。当前正式样例 6 项检查全部为 `PASS`。
+报告写入 `build/reports/data-quality.json`，检查 Bronze 行数能否由 Silver 合法、拒绝和重复数据完整对账，Silver 拒绝率与重复率是否超过默认 5% 阈值，每个站点是否只有一个当前版本、SCD2 区间是否连续，Gold 聚合行程数是否等于合法 Silver 行程数，Top 路线排名是否满足范围和唯一性约束，以及 cohort 留存率、人数和第 0 天基线是否合法。当前正式样例 8 项检查全部为 `PASS`。
 
 ## 本机性能证据
 
