@@ -171,7 +171,7 @@ Gold 先按行程业务日期分别关联起点、终点在当日有效的 SCD2 
 ./scripts/build-quality-report.ps1
 ```
 
-报告写入 `build/reports/data-quality.json`，检查 Bronze 行数能否由 Silver 合法、拒绝和重复数据完整对账，Silver 拒绝率与重复率是否超过默认 5% 阈值，每个站点是否只有一个当前版本、SCD2 区间是否连续，Gold 聚合行程数是否等于合法 Silver 行程数，Top 路线排名是否满足范围和唯一性约束，以及 cohort 留存率、人数和第 0 天基线是否合法。当前正式样例 8 项检查全部为 `PASS`。
+报告写入 `build/reports/data-quality.json`，检查 Bronze 最新分区是否满足显式新鲜度要求、行数能否由 Silver 合法/拒绝/重复数据完整对账、拒绝率与重复率是否超过默认 5% 阈值，以及 SCD2、Gold 聚合、Top 路线和 cohort 留存约束。当前正式样例 9 项检查全部为 `PASS`。
 
 ## 本机性能证据
 

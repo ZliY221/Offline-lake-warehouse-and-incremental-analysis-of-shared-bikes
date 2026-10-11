@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import date
 import json
 from pathlib import Path
 
@@ -27,6 +28,11 @@ def main() -> None:
     parser.add_argument("--route-limit", type=int, default=3)
     parser.add_argument("--max-rejected-ratio", type=float, default=0.05)
     parser.add_argument("--max-duplicate-ratio", type=float, default=0.05)
+    parser.add_argument(
+        "--required-latest-ingestion-date",
+        type=date.fromisoformat,
+        help="fail when the newest Bronze ingestion_date is older than this date",
+    )
     parser.add_argument("--fail-on-error", action="store_true")
     args = parser.parse_args()
     spark = create_local_spark("bike-trip-quality-report", Path("build/spark-warehouse"))
@@ -48,6 +54,7 @@ def main() -> None:
             route_limit=args.route_limit,
             max_rejected_ratio=args.max_rejected_ratio,
             max_duplicate_ratio=args.max_duplicate_ratio,
+            required_latest_ingestion_date=args.required_latest_ingestion_date,
         )
         print(
             json.dumps(
