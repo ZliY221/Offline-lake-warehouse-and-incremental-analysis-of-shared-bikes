@@ -92,6 +92,20 @@ def main() -> None:
                 backfill_manifest_path=args.backfill_manifests,
             ).to_dict()
 
+        def verify(target_date: date, source_sha256: str) -> dict[str, bool]:
+            target = target_date.isoformat()
+            manifests = load_manifest_directory(args.backfill_manifests)
+            return {
+                "partition_present": target in discover_partitions(args.bronze),
+                "matching_success_manifest": any(
+                    row.get("pipeline") == "trip_date_backfill"
+                    and row.get("status") == "SUCCEEDED"
+                    and row.get("target_date") == target
+                    and row.get("source_sha256") == source_sha256
+                    for row in manifests
+                ),
+            }
+
         try:
             report = execute_repair_plan(
                 plan_document,
@@ -99,6 +113,7 @@ def main() -> None:
                 current_partitions=discover_partitions(args.bronze),
                 backfill_manifests=load_manifest_directory(args.backfill_manifests),
                 executor=run,
+                verifier=verify,
                 dry_run=args.dry_run,
             )
         finally:

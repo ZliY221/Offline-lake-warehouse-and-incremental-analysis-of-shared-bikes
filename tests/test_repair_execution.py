@@ -100,6 +100,7 @@ class RepairExecutionTests(unittest.TestCase):
                 current_partitions=set(),
                 backfill_manifests=[],
                 executor=fail,
+                verifier=lambda *_: self.fail("failed execution must not be verified"),
             )
             self.assertEqual("FAILED", report["status"])
             self.assertEqual("RuntimeError", report["actions"][0]["error_type"])
@@ -114,10 +115,49 @@ class RepairExecutionTests(unittest.TestCase):
                 current_partitions=set(),
                 backfill_manifests=[],
                 executor=lambda target, source, action: {"target_date": target.isoformat()},
+                verifier=lambda *_: {
+                    "partition_present": True,
+                    "matching_success_manifest": True,
+                },
             )
             self.assertEqual("COMPLETE", report["status"])
-            self.assertEqual("EXECUTED", report["actions"][0]["status"])
+            self.assertEqual("VERIFIED", report["actions"][0]["status"])
             self.assertEqual("2026-10-02", report["actions"][0]["result"]["target_date"])
+
+    def test_missing_persisted_evidence_fails_after_execution(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            plan, _ = self._fixture(root)
+            report = execute_repair_plan(
+                plan,
+                source_root=root,
+                current_partitions=set(),
+                backfill_manifests=[],
+                executor=lambda *_: {"written": True},
+                verifier=lambda *_: {
+                    "partition_present": True,
+                    "matching_success_manifest": False,
+                },
+            )
+            self.assertEqual("FAILED", report["status"])
+            self.assertEqual("POSTCONDITION_FAILED", report["actions"][0]["status"])
+            self.assertEqual(
+                {"partition_present": True, "matching_success_manifest": False},
+                report["actions"][0]["verification"],
+            )
+
+    def test_execution_requires_postcondition_verifier(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            plan, _ = self._fixture(root)
+            with self.assertRaisesRegex(ValueError, "postcondition verifier"):
+                execute_repair_plan(
+                    plan,
+                    source_root=root,
+                    current_partitions=set(),
+                    backfill_manifests=[],
+                    executor=lambda *_: {},
+                )
 
 
 if __name__ == "__main__":

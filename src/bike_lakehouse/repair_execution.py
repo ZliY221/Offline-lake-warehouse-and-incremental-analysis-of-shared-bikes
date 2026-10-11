@@ -9,6 +9,7 @@ from typing import Any, Callable
 from .batch_manifest import fingerprint_file
 
 RepairExecutor = Callable[[date, Path, str], dict[str, Any]]
+RepairVerifier = Callable[[date, str], dict[str, Any]]
 
 
 def _successful_repairs(manifests: list[dict[str, Any]]) -> set[tuple[str, str]]:
@@ -26,9 +27,10 @@ def execute_repair_plan(
     current_partitions: set[str],
     backfill_manifests: list[dict[str, Any]],
     executor: RepairExecutor,
+    verifier: RepairVerifier | None = None,
     dry_run: bool = False,
 ) -> dict[str, Any]:
-    """Validate every source before executing; completed actions are resume-safe skips."""
+    """Execute a repair only when its source and persisted postconditions are valid."""
     if plan.get("plan_version") != "1.0":
         raise ValueError("unsupported repair plan version")
     actions = plan.get("actions")
@@ -95,6 +97,8 @@ def execute_repair_plan(
             "status": "READY",
             "actions": public_actions,
         }
+    if verifier is None and any(row["status"] == "READY_TO_EXECUTE" for row in prepared):
+        raise ValueError("repair execution requires a postcondition verifier")
 
     results: list[dict[str, Any]] = []
     failed = False
@@ -109,7 +113,37 @@ def execute_repair_plan(
                 row["source_path"],
                 str(row["action_id"]),
             )
-            results.append({**public, "status": "EXECUTED", "result": result})
+            verification = verifier(
+                date.fromisoformat(str(row["ingestion_date"])),
+                str(row["source_sha256"]),
+            )
+            partition_present = verification.get("partition_present")
+            matching_manifest = verification.get("matching_success_manifest")
+            if not isinstance(partition_present, bool) or not isinstance(matching_manifest, bool):
+                raise ValueError("postcondition verifier must return boolean evidence")
+            evidence = {
+                "partition_present": partition_present,
+                "matching_success_manifest": matching_manifest,
+            }
+            if not partition_present or not matching_manifest:
+                results.append(
+                    {
+                        **public,
+                        "status": "POSTCONDITION_FAILED",
+                        "result": result,
+                        "verification": evidence,
+                    }
+                )
+                failed = True
+                break
+            results.append(
+                {
+                    **public,
+                    "status": "VERIFIED",
+                    "result": result,
+                    "verification": evidence,
+                }
+            )
         except Exception as error:
             results.append(
                 {
