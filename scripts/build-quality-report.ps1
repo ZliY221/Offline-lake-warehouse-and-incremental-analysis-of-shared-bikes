@@ -11,7 +11,11 @@ param(
     [string]$GoldCohortRetentionPath = "build/lakehouse/gold/cohort_retention",
     [string]$BronzeManifestPath = "build/lakehouse/control/bronze_batches",
     [string]$BackfillManifestPath = "build/lakehouse/control/date_backfills",
-    [string]$OutputPath = "build/reports/data-quality.json"
+    [string]$OutputPath = "build/reports/data-quality.json",
+    [ValidateRange(0.0, 1.0)]
+    [double]$MaxRejectedRatio = 0.05,
+    [ValidateRange(0.0, 1.0)]
+    [double]$MaxDuplicateRatio = 0.05
 )
 
 $ErrorActionPreference = "Stop"
@@ -35,5 +39,7 @@ $distro = Get-WslDistroName
     --gold-cohort-retention $GoldCohortRetentionPath `
     --bronze-manifest $BronzeManifestPath `
     --backfill-manifest $BackfillManifestPath `
-    --output $OutputPath
+    --output $OutputPath `
+    --max-rejected-ratio $MaxRejectedRatio `
+    --max-duplicate-ratio $MaxDuplicateRatio
 if ($LASTEXITCODE -ne 0) { throw "Quality report build failed in WSL." }

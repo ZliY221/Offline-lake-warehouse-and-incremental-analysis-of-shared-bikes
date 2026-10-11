@@ -226,6 +226,11 @@ class DateBackfillTests(unittest.TestCase):
             )
             self.assertEqual(quality["overall_status"], "PASS")
             self.assertTrue(all(check["status"] == "PASS" for check in quality["checks"]))
+            checks = {check["name"]: check for check in quality["checks"]}
+            self.assertEqual(8, len(checks))
+            self.assertEqual(0.0, checks["silver_rejected_ratio"]["observed_ratio"])
+            self.assertEqual(0.05, checks["silver_rejected_ratio"]["maximum_ratio"])
+            self.assertEqual(0.0, checks["silver_duplicate_ratio"]["observed_ratio"])
             self.assertEqual(quality["dataset_counts"]["bronze_rows"], 7)
             self.assertEqual(quality["dataset_counts"]["silver_valid_rows"], 7)
 
