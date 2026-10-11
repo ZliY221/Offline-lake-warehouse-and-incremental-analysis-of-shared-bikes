@@ -29,9 +29,9 @@
 - [x] 使用 Airflow 3.1.6 TaskFlow DAG 运行同一五阶段任务图，并验证原生重试与阻塞式质量门禁。
 - [x] 新增带类型化运行参数的 Airflow 日期回填 DAG，验证成功重试、失败回调审计和写前保护。
 
-## 为什么单独建仓
+## 项目范围
 
-电商项目证明实时事件时间、状态、异常侧流和批流对账；本项目专注批处理与离线数仓：
+本仓库聚焦批处理与离线数仓，与实时数据仓库项目分别维护：
 
 | 项目 | 主要证据 |
 | --- | --- |
@@ -59,7 +59,7 @@ bike-trip-lakehouse/
 ├─ .github/workflows/        持续集成
 ├─ dags/                     Airflow TaskFlow DAG
 ├─ data/sample/              固定脱敏正常样例
-├─ data/quality/             固定质量问题演示批次
+├─ data/quality/             固定质量异常测试批次
 ├─ docs/                     需求、架构和技术文档
 ├─ evidence/                 经核验的原始性能证据
 ├─ scripts/                  环境探测、生成和测试脚本
@@ -123,7 +123,7 @@ Silver 将完整重建三个数据集：
 - `trips_rejected`：业务或结构失败记录，损坏原文只保留 SHA-256 指纹和字节数；
 - `trips_duplicates`：区分完全相同的重复投递与同 ID 不同内容的主键冲突。
 
-质量问题演示：
+质量异常验证：
 
 ```powershell
 ./scripts/silver-quality-demo.ps1
@@ -214,7 +214,7 @@ Gold 先按行程业务日期分别关联起点、终点在当日有效的 SCD2 
 ## 作业编排、重试与恢复
 
 ```powershell
-# 受控演示：Silver 第一次故意失败，第二次自动重试
+# 故障注入：Silver 第一次失败，第二次自动重试
 ./scripts/run-managed-pipeline.ps1 `
   -RunRoot build/managed-pipeline-evidence `
   -RunId retry-evidence-20261005 `
@@ -229,7 +229,7 @@ Gold 先按行程业务日期分别关联起点、终点在当日有效的 SCD2 
 
 编排图为 Bronze → Silver、独立站点 SCD2、Silver + SCD2 → Gold、Gold → 质量门禁。运行清单在每次状态变化后原子落盘，并为每次尝试保存退出码、相对日志路径和 SHA-256。真实证据中 Silver 第一次以受控退出码 75 失败，第二次成功；Bronze、站点维表、Gold 和质量门禁均只执行一次。随后恢复运行跳过全部5个成功任务，任务尝试次数保持不变。证据见 [`evidence/orchestration-retry-local.json`](evidence/orchestration-retry-local.json) 和 [`evidence/orchestration-retry-local.md`](evidence/orchestration-retry-local.md)。
 
-这是单机、进程级的可迁移编排核心，用于证明依赖、重试、恢复和审计语义；下面的 Airflow 适配器复用同一任务定义，不重复维护业务命令。
+这是单机、进程级的编排核心，用于验证依赖、重试、恢复和审计语义；Airflow 适配器复用同一任务定义，不重复维护业务命令。
 
 ## Airflow DAG 本地验收
 

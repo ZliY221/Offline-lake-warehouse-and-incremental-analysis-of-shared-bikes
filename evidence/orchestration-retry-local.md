@@ -5,7 +5,7 @@ Run ID: `retry-resume-evidence-20261005`
 Status: `SUCCEEDED`
 Resume count: `1`
 
-This manifest proves local dependency, retry, log hashing and resume behavior. It is not evidence of a production scheduler or distributed control plane.
+Scope: local dependency, retry, log hashing, and resume behavior. Production scheduling and distributed control planes are out of scope.
 
 ## Task states
 

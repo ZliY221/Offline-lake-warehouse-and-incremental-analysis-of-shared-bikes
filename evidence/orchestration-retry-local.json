@@ -1,5 +1,5 @@
 {
-  "claims_boundary": "This manifest proves local dependency, retry, log hashing and resume behavior. It is not evidence of a production scheduler or distributed control plane.",
+  "claims_boundary": "Scope: local dependency, retry, log hashing, and resume behavior. Production scheduling and distributed control planes are out of scope.",
   "created_at_utc": "2026-10-05T08:12:57Z",
   "events": [
     {

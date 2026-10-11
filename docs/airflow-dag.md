@@ -1,10 +1,10 @@
-# 把批处理任务图接入 Airflow
+# Airflow 批处理任务图
 
-## 项目目标
+## 设计范围
 
-理解业务作业、任务图定义和调度框架之间的边界，并能用真实运行证据解释依赖、重试与质量门禁。
+Airflow 适配层复用项目任务定义，将 Bronze、Silver、站点维表、Gold 和质量门禁映射为 TaskFlow DAG，并配置依赖与重试策略。
 
-## 共享定义为什么重要
+## 共享任务定义
 
 如果本地脚本和 Airflow DAG 各自维护五套命令，参数很容易漂移。本项目将任务名、上游依赖、Python 模块和参数集中在 `pipeline_definition.py`：
 
@@ -47,4 +47,4 @@ Airflow 安装在 Git 忽略的项目目录中，使用独立 Python 3.12，不�
 
 GitHub Actions 使用官方约束文件安装 Airflow 3.1.6，检查 DAG 能导入、依赖正确且每个任务配置一次重试。为控制 CI 时间，远程 Job 不再次执行完整五阶段 Spark DAG；完整运行证据来自本机 WSL。
 
-当前没有验证常驻 Scheduler、Web UI、分布式 Executor、高可用元数据库、告警、SLA 或补数权限治理。评审时应表述为“完成 Airflow DAG 开发、导入验证与单机完整运行”，不能表述为“具备 Airflow 生产运维经验”。
+当前验证不覆盖常驻 Scheduler、Web UI、分布式 Executor、高可用元数据库、告警、SLA 或补数权限治理。

@@ -2,12 +2,12 @@
 
 当前仓库已于 2026 年 10 月 4 日公开发布到 GitHub，代码、测试、质量报告、基准和技术文档均已同步。以下清单记录已完成的远程证据和仍需人工决定的发布事项。
 
-## 推荐仓库信息
+## 仓库信息
 
 - 远程仓库：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes>
 - 仓库名：`Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes`
 - 简介：`Reproducible PySpark batch lakehouse with SCD2, data quality, backfill, cohort retention and benchmark evidence.`
-- 建议 Topics：`pyspark`、`data-engineering`、`data-warehouse`、`parquet`、`scd2`、`data-quality`、`cohort-analysis`
+- Topics：`pyspark`、`data-engineering`、`data-warehouse`、`parquet`、`scd2`、`data-quality`、`cohort-analysis`
 - 默认分支：`main`
 - 可见性：Public
 
@@ -24,7 +24,7 @@ git log --oneline -10
 
 - `git status --short` 无输出；
 - 发布审计不存在高置信密钥或超过 20 MiB 的跟踪文件；`PASS_WITH_REVIEW` 项逐条确认是合成测试内容；
-- 一键演示最后输出 `"status": "PASS"`、`"automated_tests": "PASS"`、`"spark_plan_analysis": "PASS"`、`"spark_skew_join_analysis": "PASS"`；
+- 一键验收最后输出 `"status": "PASS"`、`"automated_tests": "PASS"`、`"spark_plan_analysis": "PASS"`、`"spark_skew_join_analysis": "PASS"`；
 - 质量检查数为 6，正式样例行数与 README 一致；
 - `evidence/benchmark-10000-local.json` 能被 JSON 解析；
 - `evidence/spark-plan-analysis-local.json` 同时包含 Sort-Merge、显式 Broadcast Hash Join、AQE 最终计划、分区合并与倾斜 Join 证据；
@@ -59,9 +59,8 @@ git push origin main
 2. README Mermaid 架构图可正常渲染；
 3. 相对链接能打开架构文档和性能 JSON；
 4. 仓库 About、Topics 和简介已经填写；
-5. 置顶仓库只保留旗舰实时项目、共享单车离线湖仓和一个真正不同的项目。
 
-## 建议展示截图
+## 可公开运行截图
 
 只截取可公开内容：
 

@@ -28,6 +28,23 @@ REVIEW_PATTERNS = {
     "mainland_phone": re.compile(rb"(?<!\d)1[3-9]\d{9}(?!\d)"),
     "windows_user_path": re.compile(rb"[A-Za-z]:\\Users\\[^\\\s]+"),
 }
+NON_PROJECT_PATTERNS = {
+    name: re.compile(term.encode("utf-8"), re.IGNORECASE)
+    for name, term in {
+        "resume_copy": "简历",
+        "interview_copy": "面试",
+        "job_search_copy": "求职",
+        "campus_recruiting_copy": "校招",
+        "internship_role_copy": "实习岗位",
+        "portfolio_copy": "作品集",
+        "learning_unit_copy": "学习单元",
+        "learning_plan_copy": "学习计划",
+        "exercise_copy": "动手练习",
+        "lesson_objective_copy": "本单元目标",
+        "course_source_copy": "课程源码",
+        "reviewer_copy": "评审者",
+    }.items()
+}
 
 
 def tracked_files(repo_root: Path) -> list[Path]:
@@ -55,6 +72,7 @@ def matching_lines(content: bytes, pattern: re.Pattern[bytes]) -> list[int]:
 def audit(repo_root: Path, review_size_bytes: int, fail_size_bytes: int) -> dict[str, Any]:
     high_risk: list[dict[str, Any]] = []
     review: list[dict[str, Any]] = []
+    non_project: list[dict[str, Any]] = []
     large_files: list[dict[str, Any]] = []
     files = tracked_files(repo_root)
     script_path = Path(__file__).resolve()
@@ -85,9 +103,15 @@ def audit(repo_root: Path, review_size_bytes: int, fail_size_bytes: int) -> dict
             lines = matching_lines(content, pattern)
             if lines:
                 review.append({"path": relative, "rule": rule, "lines": lines})
+        for rule, pattern in NON_PROJECT_PATTERNS.items():
+            lines = matching_lines(content, pattern)
+            if lines:
+                non_project.append(
+                    {"path": relative, "rule": rule, "lines": lines}
+                )
 
     failed_large_files = [item for item in large_files if item["status"] == "FAIL"]
-    if high_risk or failed_large_files:
+    if high_risk or non_project or failed_large_files:
         status = "FAIL"
     elif review or large_files:
         status = "PASS_WITH_REVIEW"
@@ -98,6 +122,7 @@ def audit(repo_root: Path, review_size_bytes: int, fail_size_bytes: int) -> dict
         "repository": repo_root.name,
         "tracked_file_count": len(files),
         "high_risk_matches": high_risk,
+        "non_project_matches": non_project,
         "review_matches": review,
         "large_files": large_files,
         "thresholds": {

@@ -1,8 +1,8 @@
 # 依赖编排、失败重试与断点恢复
 
-## 为什么不能只写顺序脚本
+## 编排状态模型
 
-顺序调用五个命令可以跑通演示，但无法回答任务失败后重试几次、下游是否误跑、进程中断后从哪里恢复，以及每次失败日志能否审计。编排核心把这些语义显式写进状态清单，而不是依赖终端输出或人的记忆。
+编排核心将任务依赖、尝试次数、下游阻塞、断点恢复和失败日志写入状态清单，不依赖终端输出保存运行状态。
 
 ## 任务图
 
@@ -24,7 +24,7 @@ Station SCD2 ───────┘
 - 任务依赖、最终状态以及完整事件序列；
 - 任务图指纹，防止修改依赖或命令后错误恢复旧状态。
 
-## 真实失败实验
+## 故障注入验证
 
 ```powershell
 ./scripts/run-managed-pipeline.ps1 `
@@ -37,6 +37,6 @@ Station SCD2 ───────┘
 
 证据保存在 [`evidence/orchestration-retry-local.json`](../evidence/orchestration-retry-local.json) 与 [`evidence/orchestration-retry-local.md`](../evidence/orchestration-retry-local.md)。
 
-## 诚实边界
+## 功能边界
 
-这是单机进程级编排器，重点是可测试的依赖、重试、恢复与审计语义。它还没有 Airflow/Dagster 的调度器、元数据库、Worker、高可用、告警和权限治理，因此文档应写“实现可恢复的本地编排核心”，不能写“具备生产 Airflow 平台经验”。
+该实现是单机进程级编排器，覆盖依赖、重试、恢复与审计语义，不包含 Airflow/Dagster 的调度器、元数据库、Worker、高可用、告警和权限治理。
