@@ -1,8 +1,8 @@
-# 从 Spark UI REST 指标定位 Stage 与 Task
+# Spark UI REST Stage 与 Task 指标
 
-## 为什么执行计划还不够
+## 运行指标采集
 
-执行计划说明 Spark 准备如何执行，运行指标才说明各个 Stage 和 Task 实际处理了多少数据、花了多少执行时间，以及是否发生 GC 或 Spill。本单元使用 Spark UI 的 `/api/v1` JSON 接口保存结构化证据，避免只截一张无法复核的网页图。
+Spark UI `/api/v1` 提供 Stage 和 Task 的实际处理量、执行时间、GC 与 Spill 指标。采集脚本保存结构化 JSON，便于重复检查和自动化比较。
 
 ## 受控工作负载
 
@@ -18,7 +18,7 @@
 ./scripts/explain-spark-stage-metrics.ps1
 ```
 
-## 如何阅读本机证据
+## 本机采集结果
 
 本机一次实际报告包含 1 个 Job、2 个完成 Stage 和 10 个 Task。第一个 Stage 写出 Shuffle，第二个 Stage 读取相同的 3,302,403 字节；总输入记录和 Shuffle 记录均为 50,000，最终 32 个分组重新汇总为 50,000 行，因此数据守恒。内存和磁盘 Spill 都是 0。
 

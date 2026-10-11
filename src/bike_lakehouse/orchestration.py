@@ -156,8 +156,8 @@ class PipelineOrchestrator:
             "updated_at_utc": now,
             "resume_count": 0,
             "claims_boundary": (
-                "This manifest proves local dependency, retry, log hashing and resume behavior. "
-                "It is not evidence of a production scheduler or distributed control plane."
+                "Scope: local dependency, retry, log hashing, and resume behavior. "
+                "Production scheduling and distributed control planes are out of scope."
             ),
             "tasks": {
                 task.name: {
