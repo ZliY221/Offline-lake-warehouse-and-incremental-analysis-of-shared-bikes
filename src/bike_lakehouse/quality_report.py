@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from datetime import date
 import json
 from pathlib import Path
 from typing import Any
@@ -19,6 +20,26 @@ def _require_directory(path: Path, label: str) -> Path:
 
 def _check(name: str, passed: bool, **evidence: Any) -> dict[str, Any]:
     return {"name": name, "status": "PASS" if passed else "FAIL", **evidence}
+
+
+def evaluate_partition_freshness(
+    partition_dates: set[str], required_latest_date: date
+) -> dict[str, Any]:
+    """Evaluate whether Bronze contains a partition at or after the required date."""
+    parsed_dates: list[date] = []
+    for value in partition_dates:
+        try:
+            parsed_dates.append(date.fromisoformat(value))
+        except ValueError as error:
+            raise ValueError(f"invalid Bronze ingestion_date partition: {value}") from error
+    latest = max(parsed_dates) if parsed_dates else None
+    return _check(
+        "bronze_partition_freshness",
+        latest is not None and latest >= required_latest_date,
+        required_latest_ingestion_date=required_latest_date.isoformat(),
+        observed_latest_ingestion_date=latest.isoformat() if latest else None,
+        observed_partition_count=len(parsed_dates),
+    )
 
 
 def _manifest_summary(*directories: Path) -> dict[str, Any]:
@@ -54,6 +75,7 @@ def build_quality_report(
     route_limit: int = 3,
     max_rejected_ratio: float = 0.05,
     max_duplicate_ratio: float = 0.05,
+    required_latest_ingestion_date: date | None = None,
 ) -> dict[str, Any]:
     """Build and persist a machine-readable report with cross-layer invariants."""
     from pyspark.sql import Window, functions as F
@@ -224,6 +246,13 @@ def build_quality_report(
             violation_count=retention_violations,
         ),
     ]
+    if required_latest_ingestion_date is not None:
+        checks.insert(
+            0,
+            evaluate_partition_freshness(
+                set(bronze_partitions), required_latest_ingestion_date
+            ),
+        )
     manifests = _manifest_summary(bronze_manifest_path, backfill_manifest_path)
     failed_manifests = manifests["status_counts"].get("FAILED", 0)
     if any(check["status"] == "FAIL" for check in checks):

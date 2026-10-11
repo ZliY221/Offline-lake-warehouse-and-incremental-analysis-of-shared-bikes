@@ -23,6 +23,8 @@ class PipelineDefinitionTests(unittest.TestCase):
         quality = commands[-1]
         self.assertEqual(quality.module, "bike_lakehouse.quality_report_cli")
         self.assertIn("--fail-on-error", quality.arguments)
+        freshness_index = quality.arguments.index("--required-latest-ingestion-date")
+        self.assertEqual("2026-10-01", quality.arguments[freshness_index + 1])
 
     def test_managed_orchestrator_uses_the_canonical_commands(self) -> None:
         run_root = Path("build/test-run")

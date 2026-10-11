@@ -15,7 +15,9 @@ param(
     [ValidateRange(0.0, 1.0)]
     [double]$MaxRejectedRatio = 0.05,
     [ValidateRange(0.0, 1.0)]
-    [double]$MaxDuplicateRatio = 0.05
+    [double]$MaxDuplicateRatio = 0.05,
+    [ValidatePattern('^\d{4}-\d{2}-\d{2}$')]
+    [string]$RequiredLatestIngestionDate = "2026-10-01"
 )
 
 $ErrorActionPreference = "Stop"
@@ -41,5 +43,6 @@ $distro = Get-WslDistroName
     --backfill-manifest $BackfillManifestPath `
     --output $OutputPath `
     --max-rejected-ratio $MaxRejectedRatio `
-    --max-duplicate-ratio $MaxDuplicateRatio
+    --max-duplicate-ratio $MaxDuplicateRatio `
+    --required-latest-ingestion-date $RequiredLatestIngestionDate
 if ($LASTEXITCODE -ne 0) { throw "Quality report build failed in WSL." }
