@@ -6,7 +6,7 @@
 
 本项目为独立实现，所有输入、处理逻辑、验证脚本和证据均保存在当前仓库中。
 
-当前版本：`v0.2.0`。版本变更见 [CHANGELOG](CHANGELOG.md)。
+当前版本：`v0.2.1`。版本变更见 [CHANGELOG](CHANGELOG.md)。
 
 ## 当前进度
 
@@ -86,6 +86,8 @@ python -m pip install -e .
 ```
 
 Windows 本机的 Hadoop 文件系统实现写 Parquet 需要额外的 `winutils.exe`。本项目不下载来源不明的二进制文件，而是在 WSL 中运行 Spark；项目脚本使用微软官方免安装 JDK 17，只写入被 Git 忽略的 `build/tools/`，不修改系统 Java。
+
+仓库通过 `.gitattributes` 固定 WSL Shell 脚本使用 LF 换行符，因此从 Windows 克隆或下载后可直接交给 WSL 执行，不受本机 Git `core.autocrlf` 设置影响。
 
 首次准备：
 
