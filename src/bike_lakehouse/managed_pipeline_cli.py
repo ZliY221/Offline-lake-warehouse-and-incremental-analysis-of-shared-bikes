@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import sys
 
 from .orchestration import (
     CommandExecutor,
@@ -15,9 +16,9 @@ from .orchestration import (
 from .pipeline_definition import build_pipeline_commands
 
 
-def _tasks(run_root: Path) -> list[TaskSpec]:
+def _tasks(run_root: Path, python_executable: str = sys.executable) -> list[TaskSpec]:
     return [
-        TaskSpec(spec.name, spec.dependencies, spec.argv())
+        TaskSpec(spec.name, spec.dependencies, spec.argv(python_executable))
         for spec in build_pipeline_commands(run_root)
     ]
 

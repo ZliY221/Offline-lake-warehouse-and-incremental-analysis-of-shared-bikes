@@ -7,7 +7,7 @@
 
 本项目为独立实现，所有输入、处理逻辑、验证脚本和证据均保存在当前仓库中。
 
-当前版本：`v0.6.1`。版本变更见 [CHANGELOG](CHANGELOG.md)，版本摘要见 [VERSION_LOG](VERSION_LOG.md)。
+当前版本：`v0.7.0`。版本变更见 [CHANGELOG](CHANGELOG.md)，版本摘要见 [VERSION_LOG](VERSION_LOG.md)。
 
 ## 当前进度
 
@@ -33,6 +33,7 @@
 - [x] 新增带类型化运行参数的 Airflow 日期回填 DAG，验证成功重试、失败回调审计和写前保护。
 - [x] 提供适配 Windows/WSL 与 Linux 的环境自检和结构化诊断报告。
 - [x] 在 Windows、Ubuntu 和 macOS 干净环境验证安装、数据生成与契约入口。
+- [x] 提供跨平台数据源和完整 Spark 湖仓两档一键入口，并支持编排状态续跑。
 - [x] 实现缺失分区计划的全量预检、dry-run、顺序执行与断点恢复。
 - [x] 实现修复来源目录的确定性清单生成、命名约束和 SHA-256 血缘记录。
 - [x] 为修复执行增加逐动作、立即刷盘的追加式审计日志。
@@ -90,6 +91,15 @@ bike-trip-lakehouse/
 python -m pip install -e .
 ```
 
+运行跨平台数据源入口，或运行完整湖仓：
+
+```powershell
+python scripts/quickstart.py --mode source
+python scripts/quickstart.py --mode pipeline
+```
+
+`source` 在 Windows、Ubuntu 和 macOS 直接生成已校验的行程与站点数据；`pipeline` 继续构建 Bronze、Silver、站点 SCD2、Gold 和质量报告。在 Windows 上完整模式自动使用 WSL。输出契约和续跑行为见[一键本地运行](docs/quickstart.md)。
+
 安装后先检查当前运行环境：
 
 ```powershell
@@ -100,7 +110,7 @@ python scripts/project_doctor.py --profile airflow --json-output build/doctor/re
 
 `source` 只检查跨平台数据源入口；Windows 的 `pipeline` 和 `airflow` 会检查 WSL 与仓库隔离运行时，Linux/macOS 则检查当前 Python 与 JDK。详细说明见[环境自检](docs/environment-preflight.md)。
 
-`.github/workflows/portable-smoke.yml` 会在三个桌面平台从全新检出安装依赖并运行数据生成和契约检查；Ubuntu 与 macOS 还会启动本地 Spark 并完成 Parquet 往返。Windows 的完整 Parquet 流程仍通过 WSL 入口执行。
+`.github/workflows/portable-smoke.yml` 会在三个桌面平台从全新检出执行 `source` 一键入口；Ubuntu 与 macOS 还会执行完整五阶段 Spark 湖仓入口。Windows 的完整 Parquet 流程仍通过 WSL 入口执行。
 
 Windows 本机的 Hadoop 文件系统实现写 Parquet 需要额外的 `winutils.exe`。本项目不下载来源不明的二进制文件，而是在 WSL 中运行 Spark；项目脚本使用微软官方免安装 JDK 17，只写入被 Git 忽略的 `build/tools/`，不修改系统 Java。
 
@@ -213,7 +223,7 @@ Gold 先按行程业务日期分别关联起点、终点在当日有效的 SCD2 
 ./scripts/test-all.ps1
 ```
 
-当前 32 项测试覆盖确定性、契约、金额/时间边界、匿名键格式与隐私字段、显式 Spark Schema、Parquet 类型、同分区幂等重跑、跨日期分区保留、批次状态与失败记录、单日期回填、跨分区主键保护、cohort 依赖传播、质量分流、SCD2、Gold 时态关联与留存、真实 Spark 物理计划、Spark UI REST 指标，以及共享任务定义、依赖、重试、恢复、任务图、回调最小披露和输入路径约束。GitHub CI 另有独立 Airflow Job，安装受官方约束文件锁定的 Airflow 3.1.6，并验证完整构建与日期回填两个 DAG 的导入、参数、依赖和重试配置。
+当前 55 项检查覆盖确定性、契约、金额/时间边界、匿名键格式与隐私字段、显式 Spark Schema、Parquet 类型、同分区幂等重跑、跨日期分区保留、批次状态与失败记录、单日期回填、跨分区主键保护、cohort 依赖传播、质量分流、SCD2、Gold 时态关联与留存、真实 Spark 物理计划、Spark UI REST 指标，以及共享任务定义、依赖、重试、恢复、任务图、回调最小披露和输入路径约束。GitHub CI 另有独立 Airflow Job，安装受官方约束文件锁定的 Airflow 3.1.6，并验证完整构建与日期回填两个 DAG 的导入、参数、依赖和重试配置。
 
 ## Spark 执行计划证据
 

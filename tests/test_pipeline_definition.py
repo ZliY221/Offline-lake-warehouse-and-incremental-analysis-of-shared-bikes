@@ -31,11 +31,11 @@ class PipelineDefinitionTests(unittest.TestCase):
     def test_managed_orchestrator_uses_the_canonical_commands(self) -> None:
         run_root = Path("build/test-run")
         commands = build_pipeline_commands(run_root)
-        managed = _tasks(run_root)
+        managed = _tasks(run_root, "project-python")
         self.assertEqual(
             [(task.name, task.dependencies, task.command) for task in managed],
             [
-                (command.name, command.dependencies, command.argv())
+                (command.name, command.dependencies, command.argv("project-python"))
                 for command in commands
             ],
         )

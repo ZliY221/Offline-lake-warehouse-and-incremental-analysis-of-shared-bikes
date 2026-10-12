@@ -20,4 +20,4 @@ python scripts/project_doctor.py --profile pipeline --json-output build/doctor/r
 
 ## 平台验证范围
 
-`portable-smoke.yml` 在 Windows、Ubuntu 和 macOS 上执行 Python 3.12 安装、`source` 自检、数据生成和契约用例。Ubuntu 与 macOS 同时执行 `pipeline` 自检和 Parquet 往返；Windows 的 Parquet 与完整数仓流程统一通过 WSL，避免依赖非官方 `winutils.exe`。
+`portable-smoke.yml` 在 Windows、Ubuntu 和 macOS 上从全新检出执行 `scripts/quickstart.py --mode source`。Ubuntu 与 macOS 同时执行 `--mode pipeline`，构建 Bronze、Silver、站点 SCD2、Gold 和跨层质量报告；Windows 的 Parquet 与完整数仓流程统一通过 WSL，避免依赖非官方 `winutils.exe`。

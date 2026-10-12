@@ -42,29 +42,13 @@ jobs:
           java-version: "17"
       - name: Install project
         run: python -m pip install --disable-pip-version-check -e .
-      - name: Inspect portable source prerequisites
-        run: >-
-          python scripts/project_doctor.py
-          --profile source
-          --json-output build/portable/source-doctor.json
-          --markdown-output build/portable/source-doctor.md
-      - name: Generate and validate deterministic source data
-        run: >-
-          python -m bike_lakehouse.cli
-          --date 2026-10-01
-          --count 20
-          --seed 2027
-          --trips-output build/portable/trips.ndjson
-          --stations-output build/portable/stations.ndjson
+      - name: Run the portable source quickstart
+        run: python scripts/quickstart.py --mode source --output-dir build/portable
       - name: Run source contract tests
         run: python -W error -m unittest tests.test_generator -v
-      - name: Inspect the native Spark runtime
+      - name: Run the complete native lakehouse quickstart
         if: runner.os != 'Windows'
         run: >-
-          python scripts/project_doctor.py
-          --profile pipeline
-          --json-output build/portable/pipeline-doctor.json
-          --markdown-output build/portable/pipeline-doctor.md
-      - name: Exercise local Parquet storage
-        if: runner.os != 'Windows'
-        run: python -W error -m unittest tests.test_bronze -v
+          python scripts/quickstart.py
+          --mode pipeline
+          --output-dir build/portable-full
