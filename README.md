@@ -6,7 +6,7 @@
 
 本项目为独立实现，所有输入、处理逻辑、验证脚本和证据均保存在当前仓库中。
 
-当前版本：`v0.5.0`。版本变更见 [CHANGELOG](CHANGELOG.md)，版本摘要见 [VERSION_LOG](VERSION_LOG.md)。
+当前版本：`v0.6.0`。版本变更见 [CHANGELOG](CHANGELOG.md)，版本摘要见 [VERSION_LOG](VERSION_LOG.md)。
 
 ## 当前进度
 
@@ -30,6 +30,7 @@
 - [x] 使用真实五阶段 Spark 链路验证依赖编排、失败重试、日志哈希与断点恢复。
 - [x] 使用 Airflow 3.1.6 TaskFlow DAG 运行同一五阶段任务图，并验证原生重试与阻塞式质量门禁。
 - [x] 新增带类型化运行参数的 Airflow 日期回填 DAG，验证成功重试、失败回调审计和写前保护。
+- [x] 提供适配 Windows/WSL 与 Linux 的环境自检和结构化诊断报告。
 - [x] 实现缺失分区计划的全量预检、dry-run、顺序执行与断点恢复。
 - [x] 实现修复来源目录的确定性清单生成、命名约束和 SHA-256 血缘记录。
 - [x] 为修复执行增加逐动作、立即刷盘的追加式审计日志。
@@ -86,6 +87,15 @@ bike-trip-lakehouse/
 ```powershell
 python -m pip install -e .
 ```
+
+安装后先检查当前运行环境：
+
+```powershell
+python scripts/project_doctor.py --profile pipeline
+python scripts/project_doctor.py --profile airflow --json-output build/doctor/report.json --markdown-output build/doctor/report.md
+```
+
+Windows 环境会检查 WSL 和仓库内隔离的 JDK/PySpark/Airflow 运行时；Linux 环境会检查当前 Python 与 JDK。详细说明见[环境自检](docs/environment-preflight.md)。
 
 Windows 本机的 Hadoop 文件系统实现写 Parquet 需要额外的 `winutils.exe`。本项目不下载来源不明的二进制文件，而是在 WSL 中运行 Spark；项目脚本使用微软官方免安装 JDK 17，只写入被 Git 忽略的 `build/tools/`，不修改系统 Java。
 

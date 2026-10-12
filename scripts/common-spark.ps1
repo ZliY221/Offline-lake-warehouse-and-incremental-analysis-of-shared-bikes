@@ -32,14 +32,22 @@ function Find-PythonCommand {
         if (-not (Get-Command $env:PYTHON -ErrorAction SilentlyContinue)) {
             throw "The Python executable configured in PYTHON was not found."
         }
+        & $env:PYTHON -c `
+            "import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)" *> $null
+        if ($LASTEXITCODE -ne 0) {
+            throw "The configured Python executable must be Python 3.10 or newer."
+        }
         return [PSCustomObject]@{ Executable = $env:PYTHON; Arguments = @() }
     }
     foreach ($candidate in @("python", "python3", "py")) {
         if (Get-Command $candidate -ErrorAction SilentlyContinue) {
-            if ($candidate -eq "py") {
-                return [PSCustomObject]@{ Executable = "py"; Arguments = @("-3") }
+            $arguments = @()
+            if ($candidate -eq "py") { $arguments = @("-3") }
+            & $candidate @arguments -c `
+                "import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)" *> $null
+            if ($LASTEXITCODE -eq 0) {
+                return [PSCustomObject]@{ Executable = $candidate; Arguments = $arguments }
             }
-            return [PSCustomObject]@{ Executable = $candidate; Arguments = @() }
         }
     }
     throw "Python 3 was not found."
