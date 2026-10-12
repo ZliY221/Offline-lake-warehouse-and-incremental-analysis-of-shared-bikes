@@ -59,3 +59,5 @@
 `repair_cli execute` 在启动 Spark 前验证计划版本、动作编号、来源路径和 SHA-256。任一动作缺少来源或指纹不匹配时，整批保持 `BLOCKED`，不会先执行部分动作。`--dry-run` 输出 `WOULD_EXECUTE` 清单，不改写湖仓。
 
 正式执行按计划顺序调用受控单日期回填。目标分区与同来源成功清单同时存在时标记为 `SKIPPED_ALREADY_COMPLETE`，因此失败后的同计划重跑只处理未完成动作。每个回填返回后，执行器会重新扫描 Bronze 分区和回填清单；只有目标分区存在且 `SUCCEEDED` 清单中的来源 SHA-256 完全匹配，动作才标记为 `VERIFIED`。任一后验条件缺失时动作标记为 `POSTCONDITION_FAILED` 并停止后续动作，避免仅凭函数返回值报告完成。独立的 `repair_cli audit` 仍可用于批次结束后的再次核对。
+
+执行模式默认把追加式审计事件写入 `build/repair/execution-journal.ndjson`，也可通过 `--journal` 指定路径。每次执行使用独立 `execution_id`，依次记录批次开始、动作开始、跳过、验证成功、执行失败、后验失败与批次结束。每条记录写入后立即刷新到磁盘；若进程中断，可通过只有 `ACTION_STARTED` 而没有终态事件的动作定位不确定执行边界。日志只保存动作编号、日期、来源 SHA-256、状态和异常类型，不保存来源绝对路径或数据行。

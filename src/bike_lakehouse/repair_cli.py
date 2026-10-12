@@ -6,10 +6,12 @@ import argparse
 from datetime import date
 import json
 from pathlib import Path
+from uuid import uuid4
 
 from .backfill import run_date_backfill
 from .batch_manifest import write_json_atomic
 from .repair_execution import execute_repair_plan
+from .repair_journal import RepairJournal
 from .repair_plan import (
     audit_repair_plan,
     build_repair_plan,
@@ -51,6 +53,11 @@ def main() -> None:
     execute.add_argument("--gold-cohort-retention", type=Path, required=True)
     execute.add_argument("--backfill-manifests", type=Path, required=True)
     execute.add_argument("--output", type=Path, required=True)
+    execute.add_argument(
+        "--journal",
+        type=Path,
+        default=Path("build/repair/execution-journal.ndjson"),
+    )
     execute.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -70,6 +77,7 @@ def main() -> None:
     else:
         plan_document = json.loads(args.plan.read_text(encoding="utf-8"))
         spark_holder: dict[str, object] = {}
+        journal = RepairJournal(args.journal, f"repair-{uuid4().hex}")
 
         def run(target_date: date, source_path: Path, action_id: str) -> dict[str, object]:
             spark = spark_holder.get("spark")
@@ -114,6 +122,7 @@ def main() -> None:
                 backfill_manifests=load_manifest_directory(args.backfill_manifests),
                 executor=run,
                 verifier=verify,
+                event_sink=journal.record,
                 dry_run=args.dry_run,
             )
         finally:

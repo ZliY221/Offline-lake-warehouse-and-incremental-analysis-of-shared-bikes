@@ -10,6 +10,7 @@ from .batch_manifest import fingerprint_file
 
 RepairExecutor = Callable[[date, Path, str], dict[str, Any]]
 RepairVerifier = Callable[[date, str], dict[str, Any]]
+RepairEventSink = Callable[[dict[str, Any]], None]
 
 
 def _successful_repairs(manifests: list[dict[str, Any]]) -> set[tuple[str, str]]:
@@ -28,6 +29,7 @@ def execute_repair_plan(
     backfill_manifests: list[dict[str, Any]],
     executor: RepairExecutor,
     verifier: RepairVerifier | None = None,
+    event_sink: RepairEventSink | None = None,
     dry_run: bool = False,
 ) -> dict[str, Any]:
     """Execute a repair only when its source and persisted postconditions are valid."""
@@ -100,14 +102,34 @@ def execute_repair_plan(
     if verifier is None and any(row["status"] == "READY_TO_EXECUTE" for row in prepared):
         raise ValueError("repair execution requires a postcondition verifier")
 
+    def emit(event_type: str, **fields: Any) -> None:
+        if event_sink is not None:
+            event_sink({"event_type": event_type, **fields})
+
+    emit("BATCH_STARTED", status="RUNNING", action_count=len(prepared))
+
     results: list[dict[str, Any]] = []
     failed = False
     for row in prepared:
         public = {key: value for key, value in row.items() if key != "source_path"}
         if row["status"] == "SKIPPED_ALREADY_COMPLETE":
             results.append(public)
+            emit(
+                "ACTION_SKIPPED",
+                action_id=row["action_id"],
+                ingestion_date=row["ingestion_date"],
+                source_sha256=row["source_sha256"],
+                status="SKIPPED_ALREADY_COMPLETE",
+            )
             continue
         try:
+            emit(
+                "ACTION_STARTED",
+                action_id=row["action_id"],
+                ingestion_date=row["ingestion_date"],
+                source_sha256=row["source_sha256"],
+                status="RUNNING",
+            )
             result = executor(
                 date.fromisoformat(str(row["ingestion_date"])),
                 row["source_path"],
@@ -134,6 +156,13 @@ def execute_repair_plan(
                         "verification": evidence,
                     }
                 )
+                emit(
+                    "ACTION_POSTCONDITION_FAILED",
+                    action_id=row["action_id"],
+                    ingestion_date=row["ingestion_date"],
+                    source_sha256=row["source_sha256"],
+                    status="POSTCONDITION_FAILED",
+                )
                 failed = True
                 break
             results.append(
@@ -144,6 +173,13 @@ def execute_repair_plan(
                     "verification": evidence,
                 }
             )
+            emit(
+                "ACTION_VERIFIED",
+                action_id=row["action_id"],
+                ingestion_date=row["ingestion_date"],
+                source_sha256=row["source_sha256"],
+                status="VERIFIED",
+            )
         except Exception as error:
             results.append(
                 {
@@ -153,11 +189,21 @@ def execute_repair_plan(
                     "error_message": str(error)[:1000],
                 }
             )
+            emit(
+                "ACTION_FAILED",
+                action_id=row["action_id"],
+                ingestion_date=row["ingestion_date"],
+                source_sha256=row["source_sha256"],
+                status="FAILED",
+                error_type=type(error).__name__,
+            )
             failed = True
             break
+    final_status = "FAILED" if failed else "COMPLETE"
+    emit("BATCH_COMPLETED", status=final_status, action_count=len(results))
     return {
         "execution_version": "1.0",
         "mode": "EXECUTE",
-        "status": "FAILED" if failed else "COMPLETE",
+        "status": final_status,
         "actions": results,
     }

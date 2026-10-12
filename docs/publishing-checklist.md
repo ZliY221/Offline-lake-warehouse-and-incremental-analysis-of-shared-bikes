@@ -82,17 +82,17 @@ git push origin main
 - Node 24 Actions 升级后的成功 CI：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/runs/37186146080>
 - 对应提交：`e864b1d9d8c4a7a7d75784bfa167c3bbe89448ce`
 - 分区级增量回填成功 CI：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/runs/37251252105>
-- 对应提交：`85e3dfffc47ecd4348e008d7835c9246d02f2ac8`；21 项测试通过，覆盖非目标分区文件哈希不变与跨分区主键写前失败。
+- 对应提交：`85e3dfffc47ecd4348e008d7835c9246d02f2ac8`；增加非目标分区文件哈希保护与跨分区主键写前拦截。
 - Cohort 旧/新归属依赖传播成功 CI：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/runs/37252400028>
 - 对应提交：`eabfe8cdc38078f9b570da779280250e5904fb62`；验证只写受影响 cohort 分区，同时明确计算仍为完整 Silver 扫描。
 - Spark 物理计划证据成功 CI：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/runs/37253997852>
-- 对应提交：`aed97c1d05398dbcea2486c0c51ae43880d721cb`；23 项测试通过，并保存 Sort-Merge、显式 Broadcast Hash Join 与 AQE 的真实格式化计划。该证据只证明计划选择和结果等价，不作为生产性能结论。
+- 对应提交：`aed97c1d05398dbcea2486c0c51ae43880d721cb`；保存 Sort-Merge、显式 Broadcast Hash Join 与 AQE 的真实格式化计划。该证据只证明计划选择和结果等价，不作为生产性能结论。
 - AQE 最终计划与倾斜 Join 证据成功 CI：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/runs/37255277521>
-- 对应提交：`0e02a82cc23e9b7a8dd1615b2fff32f0146b8cb5`；23 项测试通过，最终计划实际观察到 `AQEShuffleRead coalesced`、`SortMergeJoin(skew=true)` 与倾斜分区读取，并验证优化前后结果一致。
+- 对应提交：`0e02a82cc23e9b7a8dd1615b2fff32f0146b8cb5`；最终计划实际观察到 `AQEShuffleRead coalesced`、`SortMergeJoin(skew=true)` 与倾斜分区读取，并确认优化前后结果一致。
 - Spark UI REST Stage/Task 指标成功 CI：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/runs/37277811133>
-- 对应提交：`c1efbbdd34f082dc0a2f0eb1dfce0125a2c89f3e`；25 项测试通过，实时采集目标 Job、完成 Stage、任务耗时、Shuffle、GC 与 Spill 指标；本机静态网页受中文路径限制，不列为已验证证据。
+- 对应提交：`c1efbbdd34f082dc0a2f0eb1dfce0125a2c89f3e`；实时采集目标 Job、完成 Stage、任务耗时、Shuffle、GC 与 Spill 指标；本机静态网页受中文路径限制，不列为已验证证据。
 - 可恢复五阶段编排成功 CI：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/runs/37284868111>
-- 对应提交：`8d9c7cf701907ee6120891232b767c7a397b427d`；28 项测试通过，故障注入验证 Silver 首次失败后重试成功，恢复运行按任务图指纹跳过 5 个已成功任务。该实现是本地顺序编排语义，不作为 Airflow、Dagster 或生产调度经验。
+- 对应提交：`8d9c7cf701907ee6120891232b767c7a397b427d`；故障注入覆盖 Silver 首次失败后的重试，恢复运行按任务图指纹跳过 5 个已完成任务。该实现是本地顺序编排语义，不作为 Airflow、Dagster 或生产调度经验。
 - Airflow DAG 适配成功 CI：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/runs/38015494396>
 - 对应提交：`e5c51745d21ac421e4695dae6b9e0d211d2203bb`；远程 Airflow 3.1.6 Job 在 26 秒内完成 DAG 导入、5 任务依赖和重试配置验证，Spark/Python Job 通过 30 项测试。本机 `DAG.test()` 另实际执行全部 PySpark 阶段，Silver 两次尝试后 DAG Run 与 6 项质量门禁均成功；不外推为生产 Airflow 运维经验。
 - 参数化 Airflow 日期回填成功 CI：<https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/runs/38018241288>
