@@ -2,6 +2,8 @@
 
 `scripts/quickstart.py` 统一提供跨平台数据源入口和完整 Spark 湖仓入口。脚本从自身位置解析仓库根目录，所有子进程使用当前 Python 环境，输出保存在 Git 忽略的 `build/` 目录。
 
+全新环境可先运行 `python scripts/bootstrap.py -- --mode source`，由[隔离运行时启动器](portable-runtime.md)创建项目内虚拟环境、安装锁定依赖并调用本入口。
+
 ## 跨平台数据源模式
 
 ```shell

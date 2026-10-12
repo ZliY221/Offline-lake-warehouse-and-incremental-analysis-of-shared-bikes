@@ -7,7 +7,7 @@
 
 本项目为独立实现，所有输入、处理逻辑、验证脚本和证据均保存在当前仓库中。
 
-当前版本：`v0.7.0`。版本变更见 [CHANGELOG](CHANGELOG.md)，版本摘要见 [VERSION_LOG](VERSION_LOG.md)。
+当前版本：`v0.8.0`。版本变更见 [CHANGELOG](CHANGELOG.md)，版本摘要见 [VERSION_LOG](VERSION_LOG.md)。
 
 ## 当前进度
 
@@ -34,6 +34,7 @@
 - [x] 提供适配 Windows/WSL 与 Linux 的环境自检和结构化诊断报告。
 - [x] 在 Windows、Ubuntu 和 macOS 干净环境验证安装、数据生成与契约入口。
 - [x] 提供跨平台数据源和完整 Spark 湖仓两档一键入口，并支持编排状态续跑。
+- [x] 提供自动创建、复用和更新项目隔离环境的跨平台启动器。
 - [x] 实现缺失分区计划的全量预检、dry-run、顺序执行与断点恢复。
 - [x] 实现修复来源目录的确定性清单生成、命名约束和 SHA-256 血缘记录。
 - [x] 为修复执行增加逐动作、立即刷盘的追加式审计日志。
@@ -90,6 +91,15 @@ bike-trip-lakehouse/
 ```powershell
 python -m pip install -e .
 ```
+
+全新检出或 ZIP 解压后，也可以由启动器创建项目隔离环境并直接运行：
+
+```powershell
+python scripts/bootstrap.py -- --mode source
+python scripts/bootstrap.py -- --mode pipeline
+```
+
+启动器不修改系统 Python；`source` 不下载 PySpark，`pipeline` 才准备完整依赖，配置指纹一致时复用 `build/portable-runtime/`。参数、更新规则和平台边界见[隔离运行时启动器](docs/portable-runtime.md)。
 
 运行跨平台数据源入口，或运行完整湖仓：
 

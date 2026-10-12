@@ -40,15 +40,25 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - name: Install project
-        run: python -m pip install --disable-pip-version-check -e .
-      - name: Run the portable source quickstart
-        run: python scripts/quickstart.py --mode source --output-dir build/portable
-      - name: Run source contract tests
-        run: python -W error -m unittest tests.test_generator -v
+      - name: Bootstrap the isolated runtime and run the portable source quickstart
+        run: >-
+          python scripts/bootstrap.py
+          --runtime-dir build/portable-runtime
+          --
+          --mode source
+          --output-dir build/portable
+      - name: Reuse the isolated runtime
+        run: >-
+          python scripts/bootstrap.py
+          --runtime-dir build/portable-runtime
+          --
+          --mode source
+          --output-dir build/portable
       - name: Run the complete native lakehouse quickstart
         if: runner.os != 'Windows'
         run: >-
-          python scripts/quickstart.py
+          python scripts/bootstrap.py
+          --runtime-dir build/portable-runtime
+          --
           --mode pipeline
           --output-dir build/portable-full

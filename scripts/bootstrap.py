@@ -1,0 +1,147 @@
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import platform
+import re
+import shutil
+import subprocess
+import sys
+import venv
+
+
+ROOT = Path(__file__).resolve().parents[1]
+BUILD_ROOT = (ROOT / "build").resolve()
+MARKER_NAME = "runtime.json"
+MARKER_SCHEMA = 1
+
+
+def _project_metadata() -> tuple[str, str, str]:
+    pyproject = ROOT / "pyproject.toml"
+    content = pyproject.read_bytes()
+    text = content.decode("utf-8")
+    section = re.search(r"(?ms)^\[project\]\s*(.*?)(?=^\[|\Z)", text)
+    if section is None:
+        raise ValueError("pyproject.toml does not contain a project section")
+
+    def field(name: str) -> str:
+        match = re.search(rf'(?m)^{name}\s*=\s*"([^"]+)"\s*$', section.group(1))
+        if match is None:
+            raise ValueError(f"pyproject.toml project.{name} is missing")
+        return match.group(1)
+
+    return field("name"), field("version"), hashlib.sha256(content).hexdigest()
+
+
+def _runtime_python(runtime_dir: Path) -> Path:
+    relative = Path("Scripts/python.exe") if os.name == "nt" else Path("bin/python")
+    return runtime_dir / relative
+
+
+def _resolve_runtime_dir(value: Path) -> Path:
+    candidate = value if value.is_absolute() else ROOT / value
+    resolved = candidate.resolve()
+    if resolved == BUILD_ROOT or not resolved.is_relative_to(BUILD_ROOT):
+        raise ValueError("runtime directory must be a child of the project build directory")
+    return resolved
+
+
+def _runtime_signature(install_scope: str) -> dict[str, object]:
+    name, version, pyproject_hash = _project_metadata()
+    return {
+        "schema": MARKER_SCHEMA,
+        "project": name,
+        "project_version": version,
+        "pyproject_sha256": pyproject_hash,
+        "python_implementation": platform.python_implementation(),
+        "python_version": platform.python_version(),
+        "install_scope": install_scope,
+    }
+
+
+def _read_marker(runtime_dir: Path) -> dict[str, object] | None:
+    marker = runtime_dir / MARKER_NAME
+    try:
+        return json.loads(marker.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return None
+
+
+def _write_marker(runtime_dir: Path, signature: dict[str, object]) -> None:
+    marker = runtime_dir / MARKER_NAME
+    temporary = marker.with_suffix(".tmp")
+    temporary.write_text(
+        json.dumps(signature, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    temporary.replace(marker)
+
+
+def _prepare_runtime(runtime_dir: Path, refresh: bool, install_scope: str) -> Path:
+    signature = _runtime_signature(install_scope)
+    python = _runtime_python(runtime_dir)
+    if not refresh and python.is_file() and _read_marker(runtime_dir) == signature:
+        print(f"Reusing isolated runtime: {runtime_dir}", flush=True)
+        return python
+
+    if runtime_dir.exists():
+        shutil.rmtree(runtime_dir)
+    runtime_dir.parent.mkdir(parents=True, exist_ok=True)
+    print(f"Creating isolated runtime: {runtime_dir}", flush=True)
+    venv.EnvBuilder(with_pip=True).create(runtime_dir)
+    python = _runtime_python(runtime_dir)
+    install_command = [
+        str(python),
+        "-m",
+        "pip",
+        "install",
+        "--disable-pip-version-check",
+    ]
+    if install_scope == "source":
+        install_command.append("--no-deps")
+    install_command.extend(["--editable", str(ROOT)])
+    subprocess.run(install_command, cwd=ROOT, check=True)
+    _write_marker(runtime_dir, signature)
+    return python
+
+
+def _quickstart_mode(arguments: list[str]) -> str:
+    for index, argument in enumerate(arguments):
+        if argument == "--mode" and index + 1 < len(arguments):
+            return arguments[index + 1]
+        if argument.startswith("--mode="):
+            return argument.split("=", 1)[1]
+    return "pipeline"
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description="Prepare an isolated project runtime and execute the public quickstart"
+    )
+    parser.add_argument(
+        "--runtime-dir", type=Path, default=Path("build/portable-runtime")
+    )
+    parser.add_argument("--refresh-runtime", action="store_true")
+    args, quickstart_args = parser.parse_known_args()
+    if quickstart_args[:1] == ["--"]:
+        quickstart_args = quickstart_args[1:]
+    install_scope = "source" if _quickstart_mode(quickstart_args) == "source" else "pipeline"
+
+    try:
+        runtime_dir = _resolve_runtime_dir(args.runtime_dir)
+        python = _prepare_runtime(runtime_dir, args.refresh_runtime, install_scope)
+    except (OSError, ValueError, subprocess.CalledProcessError) as exc:
+        print(f"Runtime preparation failed: {exc}", file=sys.stderr)
+        return exc.returncode if isinstance(exc, subprocess.CalledProcessError) else 2
+
+    environment = os.environ.copy()
+    environment.pop("PYTHONPATH", None)
+    environment["PYTHONNOUSERSITE"] = "1"
+    command = [str(python), str(ROOT / "scripts" / "quickstart.py"), *quickstart_args]
+    return subprocess.run(command, cwd=ROOT, env=environment, check=False).returncode
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
