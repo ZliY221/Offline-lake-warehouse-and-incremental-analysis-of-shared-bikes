@@ -43,14 +43,12 @@ jobs:
       - name: Bootstrap the isolated runtime and run the portable source quickstart
         run: >-
           python scripts/bootstrap.py
-          --runtime-dir build/portable-runtime
           --
           --mode source
           --output-dir build/portable
       - name: Reuse the isolated runtime
         run: >-
           python scripts/bootstrap.py
-          --runtime-dir build/portable-runtime
           --
           --mode source
           --output-dir build/portable
@@ -58,7 +56,6 @@ jobs:
         if: runner.os != 'Windows'
         run: >-
           python scripts/bootstrap.py
-          --runtime-dir build/portable-runtime
           --
           --mode pipeline
           --output-dir build/portable-full

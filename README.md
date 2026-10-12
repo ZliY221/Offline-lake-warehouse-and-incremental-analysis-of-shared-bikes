@@ -7,7 +7,7 @@
 
 本项目为独立实现，所有输入、处理逻辑、验证脚本和证据均保存在当前仓库中。
 
-当前版本：`v0.8.0`。版本变更见 [CHANGELOG](CHANGELOG.md)，版本摘要见 [VERSION_LOG](VERSION_LOG.md)。
+当前版本：`v0.8.1`。版本变更见 [CHANGELOG](CHANGELOG.md)，版本摘要见 [VERSION_LOG](VERSION_LOG.md)。
 
 ## 当前进度
 
@@ -99,7 +99,7 @@ python scripts/bootstrap.py -- --mode source
 python scripts/bootstrap.py -- --mode pipeline
 ```
 
-启动器不修改系统 Python；`source` 不下载 PySpark，`pipeline` 才准备完整依赖，配置指纹一致时复用 `build/portable-runtime/`。参数、更新规则和平台边界见[隔离运行时启动器](docs/portable-runtime.md)。
+启动器不修改系统 Python；`source` 不下载 PySpark，`pipeline` 才准备完整依赖。默认使用路径较短的用户缓存目录，避免深层 ZIP 解压位置放大 Windows 路径限制。参数、更新规则和平台边界见[隔离运行时启动器](docs/portable-runtime.md)。
 
 运行跨平台数据源入口，或运行完整湖仓：
 

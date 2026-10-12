@@ -1,6 +1,6 @@
 # 隔离运行时启动器
 
-`scripts/bootstrap.py` 面向全新检出或 ZIP 解压后的首次运行。入口只要求 Python 3.10 或更高版本，在项目的 `build/portable-runtime/` 中创建虚拟环境，然后执行公开 Quickstart。`source` 模式只安装当前项目，不下载 PySpark；`pipeline` 模式安装锁定的 PySpark 依赖。
+`scripts/bootstrap.py` 面向全新检出或 ZIP 解压后的首次运行。入口只要求 Python 3.10 或更高版本，在受控的用户缓存目录中创建虚拟环境，然后执行公开 Quickstart。`source` 模式只安装当前项目，不下载 PySpark；`pipeline` 模式安装锁定的 PySpark 依赖。
 
 跨平台数据源模式：
 
@@ -20,4 +20,6 @@ python scripts/bootstrap.py -- --mode pipeline
 python scripts/bootstrap.py --refresh-runtime -- --mode source
 ```
 
-运行时目录必须位于项目 `build/` 目录内，并由 `.gitignore` 排除。启动器不会修改系统 Python，也不会写入仓库源码目录。首次安装依赖需要能够访问 Python 软件包索引。完整 Spark 模式在 Linux 与 macOS 需要 JDK 17；Windows 继续使用项目的 WSL 隔离执行路径。
+Windows 默认使用 `%LOCALAPPDATA%/ZliY221/project-runtimes/`，Linux 与 macOS 使用 `$XDG_CACHE_HOME/ZliY221/project-runtimes/` 或 `~/.cache/ZliY221/project-runtimes/`。目录名包含检出路径指纹，避免多个仓库副本共用错误的可编辑安装。
+
+使用 `--runtime-dir build/custom-runtime` 可以把环境放回当前项目。自定义位置只能位于项目 `build/` 或上述受控缓存目录。启动器不会修改系统 Python，湖仓产物始终写入项目 `build/`。首次安装依赖需要能够访问 Python 软件包索引。完整 Spark 模式在 Linux 与 macOS 需要 JDK 17；Windows 继续使用项目的 WSL 隔离执行路径。
