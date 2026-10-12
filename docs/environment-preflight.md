@@ -6,6 +6,7 @@
 
 | Profile | 检查内容 | 适用入口 |
 |---|---|---|
+| `source` | Python、样例、任务定义与输出目录 | 数据生成、契约校验和首次安装检查 |
 | `pipeline` | Python、样例与任务定义、PySpark、JDK 17、输出目录 | Bronze/Silver/Gold、回填与质量报告 |
 | `airflow` | `pipeline` 加 Airflow 运行时 | Airflow 完整构建与日期回填 DAG |
 
@@ -16,3 +17,7 @@ python scripts/project_doctor.py --profile pipeline --json-output build/doctor/r
 ```
 
 状态 `READY` 对应退出码 `0`；状态 `BLOCKED` 对应退出码 `1`。报告不写入业务数据行、来源路径或环境变量值。
+
+## 平台验证范围
+
+`portable-smoke.yml` 在 Windows、Ubuntu 和 macOS 上执行 Python 3.12 安装、`source` 自检、数据生成和契约用例。Ubuntu 与 macOS 同时执行 `pipeline` 自检和 Parquet 往返；Windows 的 Parquet 与完整数仓流程统一通过 WSL，避免依赖非官方 `winutils.exe`。

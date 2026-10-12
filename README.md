@@ -1,12 +1,13 @@
 # 共享单车离线湖仓与增量分析
 
 [![CI](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/ci.yml/badge.svg)](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/ci.yml)
+[![Portable smoke](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/portable-smoke.yml/badge.svg)](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/portable-smoke.yml)
 
 本项目使用 PySpark 本地模式和 Parquet 实现批处理数仓，覆盖显式数据契约、Bronze/Silver/Gold 分层、分区增量处理、维度历史、数据质量与 SQL，并与 Kafka/Flink 实时链路保持独立。
 
 本项目为独立实现，所有输入、处理逻辑、验证脚本和证据均保存在当前仓库中。
 
-当前版本：`v0.6.0`。版本变更见 [CHANGELOG](CHANGELOG.md)，版本摘要见 [VERSION_LOG](VERSION_LOG.md)。
+当前版本：`v0.6.1`。版本变更见 [CHANGELOG](CHANGELOG.md)，版本摘要见 [VERSION_LOG](VERSION_LOG.md)。
 
 ## 当前进度
 
@@ -31,6 +32,7 @@
 - [x] 使用 Airflow 3.1.6 TaskFlow DAG 运行同一五阶段任务图，并验证原生重试与阻塞式质量门禁。
 - [x] 新增带类型化运行参数的 Airflow 日期回填 DAG，验证成功重试、失败回调审计和写前保护。
 - [x] 提供适配 Windows/WSL 与 Linux 的环境自检和结构化诊断报告。
+- [x] 在 Windows、Ubuntu 和 macOS 干净环境验证安装、数据生成与契约入口。
 - [x] 实现缺失分区计划的全量预检、dry-run、顺序执行与断点恢复。
 - [x] 实现修复来源目录的确定性清单生成、命名约束和 SHA-256 血缘记录。
 - [x] 为修复执行增加逐动作、立即刷盘的追加式审计日志。
@@ -91,11 +93,14 @@ python -m pip install -e .
 安装后先检查当前运行环境：
 
 ```powershell
+python scripts/project_doctor.py --profile source
 python scripts/project_doctor.py --profile pipeline
 python scripts/project_doctor.py --profile airflow --json-output build/doctor/report.json --markdown-output build/doctor/report.md
 ```
 
-Windows 环境会检查 WSL 和仓库内隔离的 JDK/PySpark/Airflow 运行时；Linux 环境会检查当前 Python 与 JDK。详细说明见[环境自检](docs/environment-preflight.md)。
+`source` 只检查跨平台数据源入口；Windows 的 `pipeline` 和 `airflow` 会检查 WSL 与仓库隔离运行时，Linux/macOS 则检查当前 Python 与 JDK。详细说明见[环境自检](docs/environment-preflight.md)。
+
+`.github/workflows/portable-smoke.yml` 会在三个桌面平台从全新检出安装依赖并运行数据生成和契约检查；Ubuntu 与 macOS 还会启动本地 Spark 并完成 Parquet 往返。Windows 的完整 Parquet 流程仍通过 WSL 入口执行。
 
 Windows 本机的 Hadoop 文件系统实现写 Parquet 需要额外的 `winutils.exe`。本项目不下载来源不明的二进制文件，而是在 WSL 中运行 Spark；项目脚本使用微软官方免安装 JDK 17，只写入被 Git 忽略的 `build/tools/`，不修改系统 Java。
 

@@ -124,32 +124,33 @@ def evaluate(profile: str) -> dict[str, Any]:
             )
         )
     checks.append(writable_result())
-    checks.append(module_result("pyspark"))
-    if platform.system() == "Windows":
-        wsl_check = command_result(
-            "runtime.wsl", "Windows Subsystem for Linux", "wsl.exe", ["--status"]
-        )
-        if wsl_check["status"] == "PASS":
-            wsl_check["detail"] = "available"
-        checks.append(wsl_check)
-        checks.append(
-            managed_runtime_result(
-                "runtime.java",
-                "Project-local JDK 17",
-                "build/tools/jdk17/bin/java",
-                "scripts/setup-wsl-tools.ps1",
+    if profile != "source":
+        checks.append(module_result("pyspark"))
+        if platform.system() == "Windows":
+            wsl_check = command_result(
+                "runtime.wsl", "Windows Subsystem for Linux", "wsl.exe", ["--status"]
             )
-        )
-        checks.append(
-            managed_runtime_result(
-                "runtime.pyspark",
-                "Project-local PySpark",
-                "build/tools/python-packages/pyspark",
-                "scripts/setup-wsl-tools.ps1",
+            if wsl_check["status"] == "PASS":
+                wsl_check["detail"] = "available"
+            checks.append(wsl_check)
+            checks.append(
+                managed_runtime_result(
+                    "runtime.java",
+                    "Project-local JDK 17",
+                    "build/tools/jdk17/bin/java",
+                    "scripts/setup-wsl-tools.ps1",
+                )
             )
-        )
-    else:
-        checks.append(command_result("runtime.java", "Java runtime", "java", ["-version"], 17))
+            checks.append(
+                managed_runtime_result(
+                    "runtime.pyspark",
+                    "Project-local PySpark",
+                    "build/tools/python-packages/pyspark",
+                    "scripts/setup-wsl-tools.ps1",
+                )
+            )
+        else:
+            checks.append(command_result("runtime.java", "Java runtime", "java", ["-version"], 17))
     if profile == "airflow":
         if platform.system() == "Windows":
             checks.append(
@@ -201,7 +202,9 @@ def write_markdown(path: Path, report: dict[str, Any]) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--profile", choices=("pipeline", "airflow"), default="pipeline")
+    parser.add_argument(
+        "--profile", choices=("source", "pipeline", "airflow"), default="pipeline"
+    )
     parser.add_argument("--json-output", type=Path)
     parser.add_argument("--markdown-output", type=Path)
     args = parser.parse_args()

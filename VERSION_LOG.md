@@ -1,5 +1,11 @@
 # 版本日志
 
+## v0.6.1 · 2026-10-12
+
+- 增加 Windows、Ubuntu 和 macOS 可移植数据源工作流。
+- Ubuntu 与 macOS 增加本地 Spark Parquet 往返检查。
+- 增加 `source` 环境自检并避免标签重复运行。
+
 ## v0.6.0 · 2026-10-12
 
 - 增加 Spark 管道与 Airflow 两档跨平台环境自检。

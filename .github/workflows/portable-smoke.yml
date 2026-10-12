@@ -1,0 +1,70 @@
+name: Portable smoke
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: portable-smoke-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  portable-source-flow:
+    name: ${{ matrix.os }} portable source flow
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    env:
+      SPARK_LOCAL_IP: 127.0.0.1
+      PYTHONPATH: src
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install project
+        run: python -m pip install --disable-pip-version-check -e .
+      - name: Inspect portable source prerequisites
+        run: >-
+          python scripts/project_doctor.py
+          --profile source
+          --json-output build/portable/source-doctor.json
+          --markdown-output build/portable/source-doctor.md
+      - name: Generate and validate deterministic source data
+        run: >-
+          python -m bike_lakehouse.cli
+          --date 2026-10-01
+          --count 20
+          --seed 2027
+          --trips-output build/portable/trips.ndjson
+          --stations-output build/portable/stations.ndjson
+      - name: Run source contract tests
+        run: python -W error -m unittest tests.test_generator -v
+      - name: Inspect the native Spark runtime
+        if: runner.os != 'Windows'
+        run: >-
+          python scripts/project_doctor.py
+          --profile pipeline
+          --json-output build/portable/pipeline-doctor.json
+          --markdown-output build/portable/pipeline-doctor.md
+      - name: Exercise local Parquet storage
+        if: runner.os != 'Windows'
+        run: python -W error -m unittest tests.test_bronze -v
