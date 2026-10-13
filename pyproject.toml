@@ -4,12 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bike-trip-lakehouse"
-version = "0.9.1"
+version = "0.9.2"
 description = "A reproducible PySpark batch lakehouse project"
 requires-python = ">=3.10"
 dependencies = [
     "pyspark==4.2.0",
 ]
+
+[project.scripts]
+inspect-compaction-journal = "bike_lakehouse.compaction_status_cli:main"
 
 [tool.ruff]
 line-length = 100

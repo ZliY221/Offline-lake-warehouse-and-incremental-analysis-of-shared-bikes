@@ -9,6 +9,7 @@ from bike_lakehouse.compaction import (
     WriteResult,
     build_compaction_plan,
     execute_compaction_plan,
+    summarize_compaction_journal,
 )
 
 
@@ -147,3 +148,26 @@ class CompactionTests(unittest.TestCase):
             journal = json.loads(journal_path.read_text(encoding="utf-8"))
             self.assertEqual("SUCCEEDED", journal["status"])
             self.assertEqual(2, len(journal["completed_actions"]))
+            summary = summarize_compaction_journal(journal_path)
+            self.assertEqual(2, summary["completed_action_count"])
+            self.assertFalse(summary["resumable"])
+
+    def test_failed_journal_summary_marks_run_as_resumable(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "journal.json"
+            path.write_text(
+                json.dumps({
+                    "journal_version": "1.0",
+                    "plan_id": "plan-1",
+                    "dataset": "trips",
+                    "status": "FAILED",
+                    "updated_at_utc": "2026-10-13T00:00:00Z",
+                    "failed_action_id": "compact-2",
+                    "completed_actions": {"compact-1": {"status": "SUCCEEDED"}},
+                }),
+                encoding="utf-8",
+            )
+            summary = summarize_compaction_journal(path)
+            self.assertTrue(summary["resumable"])
+            self.assertEqual("compact-2", summary["failed_action_id"])
+            self.assertEqual(1, summary["completed_action_count"])

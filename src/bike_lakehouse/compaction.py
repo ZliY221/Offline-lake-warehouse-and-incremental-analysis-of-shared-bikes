@@ -59,6 +59,37 @@ class WriteResult:
 PartitionWriter = Callable[[Path, Path, int], WriteResult]
 
 
+def summarize_compaction_journal(path: Path) -> dict[str, object]:
+    """Return a bounded operational view of a resumable compaction journal."""
+    journal_path = Path(path)
+    try:
+        document = json.loads(journal_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"cannot read compaction journal: {journal_path}") from error
+    required = {"journal_version", "plan_id", "dataset", "status", "completed_actions"}
+    if not isinstance(document, dict) or not required.issubset(document):
+        raise ValueError("compaction journal is incomplete")
+    if document["journal_version"] != "1.0":
+        raise ValueError("unsupported compaction journal version")
+    completed = document["completed_actions"]
+    if not isinstance(completed, dict):
+        raise ValueError("compaction journal completed_actions must be an object")
+    failed_action_id = document.get("failed_action_id")
+    return {
+        "journal_version": document["journal_version"],
+        "plan_id": document["plan_id"],
+        "dataset": document["dataset"],
+        "status": document["status"],
+        "updated_at_utc": document.get("updated_at_utc"),
+        "completed_action_count": sum(
+            isinstance(action, dict) and action.get("status") == "SUCCEEDED"
+            for action in completed.values()
+        ),
+        "failed_action_id": failed_action_id,
+        "resumable": document["status"] in {"RUNNING", "FAILED"},
+    }
+
+
 def compaction_plan_id(plan: CompactionPlan) -> str:
     identity = {
         "dataset": plan.dataset,
