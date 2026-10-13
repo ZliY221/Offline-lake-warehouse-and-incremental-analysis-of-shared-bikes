@@ -1,6 +1,6 @@
 # 用户使用指南
 
-适用版本：`v0.10.2`
+适用版本：`v0.11.2`
 
 本指南随项目版本同步更新，覆盖当前版本的启动、增量处理、质量治理和恢复操作。
 
@@ -59,7 +59,15 @@ python scripts/bootstrap.py -- --mode pipeline
 inspect-compaction-journal build/compaction/journal.json
 ```
 
-输出包含计划动作总数、完成与待处理动作数、已完成分区、失败动作标识和是否可继续恢复。再次执行相同计划时，已经成功的动作会直接复用。
+输出包含计划动作总数、完成与待处理动作数、完成百分比、已完成分区、失败动作标识、恢复状态和自动化就绪状态。再次执行相同计划时，已经成功的动作会直接复用。
+
+需要供调度系统判定是否完成时使用：
+
+```powershell
+inspect-compaction-journal build/compaction/journal.json --require-complete
+```
+
+日志未完全成功时命令返回状态码 `2`；需要人工阅读时可附加 `--pretty` 输出缩进 JSON。
 
 ## 6. 调度与性能观察
 

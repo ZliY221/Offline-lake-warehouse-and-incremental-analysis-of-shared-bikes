@@ -152,11 +152,13 @@ class CompactionTests(unittest.TestCase):
             self.assertEqual(2, summary["completed_action_count"])
             self.assertEqual(2, summary["action_count"])
             self.assertEqual(0, summary["pending_action_count"])
+            self.assertEqual(100.0, summary["completion_percent"])
             self.assertEqual(
                 ["ingestion_date=2026-10-01", "ingestion_date=2026-10-02"],
                 summary["completed_partitions"],
             )
             self.assertFalse(summary["resumable"])
+            self.assertTrue(summary["automation_ready"])
 
     def test_failed_journal_summary_marks_run_as_resumable(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -184,3 +186,5 @@ class CompactionTests(unittest.TestCase):
             self.assertEqual("compact-2", summary["failed_action_id"])
             self.assertEqual(1, summary["completed_action_count"])
             self.assertEqual(1, summary["pending_action_count"])
+            self.assertEqual(50.0, summary["completion_percent"])
+            self.assertFalse(summary["automation_ready"])

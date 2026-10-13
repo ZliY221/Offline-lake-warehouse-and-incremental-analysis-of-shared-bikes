@@ -80,6 +80,7 @@ def summarize_compaction_journal(path: Path) -> dict[str, object]:
         if isinstance(action, dict) and action.get("status") == "SUCCEEDED"
     ]
     action_count = int(document.get("action_count", len(completed_actions)))
+    pending_action_count = max(0, action_count - len(completed_actions))
     return {
         "journal_version": document["journal_version"],
         "plan_id": document["plan_id"],
@@ -88,7 +89,10 @@ def summarize_compaction_journal(path: Path) -> dict[str, object]:
         "updated_at_utc": document.get("updated_at_utc"),
         "action_count": action_count,
         "completed_action_count": len(completed_actions),
-        "pending_action_count": max(0, action_count - len(completed_actions)),
+        "pending_action_count": pending_action_count,
+        "completion_percent": round(
+            len(completed_actions) / action_count * 100, 2
+        ) if action_count else 100.0,
         "completed_partitions": sorted(
             str(action["partition"])
             for action in completed_actions
@@ -96,6 +100,7 @@ def summarize_compaction_journal(path: Path) -> dict[str, object]:
         ),
         "failed_action_id": failed_action_id,
         "resumable": document["status"] in {"RUNNING", "FAILED"},
+        "automation_ready": document["status"] == "SUCCEEDED" and pending_action_count == 0,
     }
 
 
