@@ -7,7 +7,7 @@
 
 本项目为独立实现，所有输入、处理逻辑、验证脚本和证据均保存在当前仓库中。
 
-当前版本：`v0.8.1`。版本变更见 [CHANGELOG](CHANGELOG.md)，版本摘要见 [VERSION_LOG](VERSION_LOG.md)。
+当前版本：`v0.9.0`。版本变更见 [CHANGELOG](CHANGELOG.md)，版本摘要见 [VERSION_LOG](VERSION_LOG.md)。
 
 ## 当前进度
 
@@ -38,6 +38,7 @@
 - [x] 实现缺失分区计划的全量预检、dry-run、顺序执行与断点恢复。
 - [x] 实现修复来源目录的确定性清单生成、命名约束和 SHA-256 血缘记录。
 - [x] 为修复执行增加逐动作、立即刷盘的追加式审计日志。
+- [x] 增加 Parquet 分区小文件扫描、确定性压缩计划、写前指纹复核和行数守恒替换。
 
 ## 项目范围
 
@@ -217,6 +218,23 @@ Gold 先按行程业务日期分别关联起点、终点在当日有效的 SCD2 
 
 报告写入 `build/reports/data-quality.json`，检查 Bronze 最新分区是否满足显式新鲜度要求、必需日期范围是否连续、行数能否由 Silver 合法/拒绝/重复数据完整对账、拒绝率与重复率是否超过默认 5% 阈值，以及 SCD2、Gold 聚合、Top 路线和 cohort 留存约束。当前正式样例 10 项检查全部为 `PASS`。
 
+## Parquet 小文件治理
+
+先生成确定性压缩计划；确认计划后再执行分区替换：
+
+```powershell
+./scripts/compact-lakehouse.ps1 `
+  -Dataset build/lakehouse/silver/trips_valid `
+  -PartitionColumn business_date
+
+./scripts/compact-lakehouse.ps1 `
+  -Dataset build/lakehouse/silver/trips_valid `
+  -PartitionColumn business_date `
+  -Execute
+```
+
+计划按分区记录输入文件数、字节数、目标文件数和内容指纹。执行前重新核对指纹，使用临时目录写入并验证行数守恒，成功后才替换原分区；审计报告位于 `build/compaction/`。详细边界见[Parquet 分区小文件治理](docs/parquet-compaction.md)。
+
 ## 本机性能证据
 
 ```powershell
@@ -233,7 +251,7 @@ Gold 先按行程业务日期分别关联起点、终点在当日有效的 SCD2 
 ./scripts/test-all.ps1
 ```
 
-当前 55 项检查覆盖确定性、契约、金额/时间边界、匿名键格式与隐私字段、显式 Spark Schema、Parquet 类型、同分区幂等重跑、跨日期分区保留、批次状态与失败记录、单日期回填、跨分区主键保护、cohort 依赖传播、质量分流、SCD2、Gold 时态关联与留存、真实 Spark 物理计划、Spark UI REST 指标，以及共享任务定义、依赖、重试、恢复、任务图、回调最小披露和输入路径约束。GitHub CI 另有独立 Airflow Job，安装受官方约束文件锁定的 Airflow 3.1.6，并验证完整构建与日期回填两个 DAG 的导入、参数、依赖和重试配置。
+当前 63 项检查覆盖确定性、契约、金额/时间边界、匿名键格式与隐私字段、显式 Spark Schema、Parquet 类型、同分区幂等重跑、跨日期分区保留、批次状态与失败记录、小文件压缩计划和安全替换、单日期回填、跨分区主键保护、cohort 依赖传播、质量分流、SCD2、Gold 时态关联与留存、真实 Spark 物理计划、Spark UI REST 指标，以及共享任务定义、依赖、重试、恢复、任务图、回调最小披露和输入路径约束。GitHub CI 另有独立 Airflow Job，安装受官方约束文件锁定的 Airflow 3.1.6，并验证完整构建与日期回填两个 DAG 的导入、参数、依赖和重试配置。
 
 ## Spark 执行计划证据
 
