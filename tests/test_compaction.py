@@ -150,6 +150,12 @@ class CompactionTests(unittest.TestCase):
             self.assertEqual(2, len(journal["completed_actions"]))
             summary = summarize_compaction_journal(journal_path)
             self.assertEqual(2, summary["completed_action_count"])
+            self.assertEqual(2, summary["action_count"])
+            self.assertEqual(0, summary["pending_action_count"])
+            self.assertEqual(
+                ["ingestion_date=2026-10-01", "ingestion_date=2026-10-02"],
+                summary["completed_partitions"],
+            )
             self.assertFalse(summary["resumable"])
 
     def test_failed_journal_summary_marks_run_as_resumable(self) -> None:
@@ -163,7 +169,13 @@ class CompactionTests(unittest.TestCase):
                     "status": "FAILED",
                     "updated_at_utc": "2026-10-13T00:00:00Z",
                     "failed_action_id": "compact-2",
-                    "completed_actions": {"compact-1": {"status": "SUCCEEDED"}},
+                    "action_count": 2,
+                    "completed_actions": {
+                        "compact-1": {
+                            "status": "SUCCEEDED",
+                            "partition": "ingestion_date=2026-10-01",
+                        }
+                    },
                 }),
                 encoding="utf-8",
             )
@@ -171,3 +183,4 @@ class CompactionTests(unittest.TestCase):
             self.assertTrue(summary["resumable"])
             self.assertEqual("compact-2", summary["failed_action_id"])
             self.assertEqual(1, summary["completed_action_count"])
+            self.assertEqual(1, summary["pending_action_count"])

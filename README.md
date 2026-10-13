@@ -7,7 +7,7 @@
 
 本项目为独立实现，所有输入、处理逻辑、验证脚本和证据均保存在当前仓库中。
 
-当前版本：`v0.9.2`。使用方法见 [用户使用指南](docs/user-guide.md)，版本变更见 [CHANGELOG](CHANGELOG.md)，版本摘要见 [VERSION_LOG](VERSION_LOG.md)。
+当前版本：`v0.10.2`。使用方法见 [用户使用指南](docs/user-guide.md)，版本变更见 [CHANGELOG](CHANGELOG.md)，版本摘要见 [VERSION_LOG](VERSION_LOG.md)。
 
 ## 当前进度
 

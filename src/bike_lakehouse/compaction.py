@@ -75,15 +75,24 @@ def summarize_compaction_journal(path: Path) -> dict[str, object]:
     if not isinstance(completed, dict):
         raise ValueError("compaction journal completed_actions must be an object")
     failed_action_id = document.get("failed_action_id")
+    completed_actions = [
+        action for action in completed.values()
+        if isinstance(action, dict) and action.get("status") == "SUCCEEDED"
+    ]
+    action_count = int(document.get("action_count", len(completed_actions)))
     return {
         "journal_version": document["journal_version"],
         "plan_id": document["plan_id"],
         "dataset": document["dataset"],
         "status": document["status"],
         "updated_at_utc": document.get("updated_at_utc"),
-        "completed_action_count": sum(
-            isinstance(action, dict) and action.get("status") == "SUCCEEDED"
-            for action in completed.values()
+        "action_count": action_count,
+        "completed_action_count": len(completed_actions),
+        "pending_action_count": max(0, action_count - len(completed_actions)),
+        "completed_partitions": sorted(
+            str(action["partition"])
+            for action in completed_actions
+            if action.get("partition")
         ),
         "failed_action_id": failed_action_id,
         "resumable": document["status"] in {"RUNNING", "FAILED"},
@@ -253,6 +262,7 @@ def execute_compaction_plan(
         "status": "RUNNING",
         "updated_at_utc": utc_timestamp(),
         "completed_actions": {},
+        "action_count": len(plan.actions),
     }
     if journal_file is not None and journal_file.exists():
         loaded = json.loads(journal_file.read_text(encoding="utf-8"))
@@ -265,6 +275,7 @@ def execute_compaction_plan(
         journal = loaded
         journal["status"] = "RUNNING"
         journal["updated_at_utc"] = utc_timestamp()
+        journal.setdefault("action_count", len(plan.actions))
 
     completed = journal["completed_actions"]
     assert isinstance(completed, dict)
