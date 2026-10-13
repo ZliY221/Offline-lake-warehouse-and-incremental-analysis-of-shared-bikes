@@ -15,7 +15,7 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.11.2"
+VERSION = "0.12.2"
 
 
 def _output_path(value: Path) -> Path:

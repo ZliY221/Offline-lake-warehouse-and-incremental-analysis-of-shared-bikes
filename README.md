@@ -1,332 +1,130 @@
+<div align="center">
+
 # 共享单车离线湖仓与增量分析
+
+基于 PySpark 与 Parquet 的分层湖仓，覆盖增量处理、时态维度、受控回填、质量治理和任务编排。
 
 [![CI](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/ci.yml/badge.svg)](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/ci.yml)
 [![Portable smoke](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/portable-smoke.yml/badge.svg)](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/portable-smoke.yml)
+![Version](https://img.shields.io/badge/version-v0.12.2-0f766e)
+![PySpark](https://img.shields.io/badge/PySpark-4.2-e25a1c)
+![Storage](https://img.shields.io/badge/storage-Parquet-2563eb)
 
-本项目使用 PySpark 本地模式和 Parquet 实现批处理数仓，覆盖显式数据契约、Bronze/Silver/Gold 分层、分区增量处理、维度历史、数据质量与 SQL，并与 Kafka/Flink 实时链路保持独立。
+[快速启动](#快速启动) · [数据架构](#数据架构) · [核心能力](#核心能力) · [项目文档](#项目文档) · [版本记录](CHANGELOG.md)
 
-本项目为独立实现，所有输入、处理逻辑、验证脚本和证据均保存在当前仓库中。
+</div>
 
-当前版本：`v0.11.2`。使用方法见 [用户使用指南](docs/user-guide.md)，版本变更见 [CHANGELOG](CHANGELOG.md)，版本摘要见 [VERSION_LOG](VERSION_LOG.md)。
+## 项目简介
 
-## 当前进度
+项目以共享单车行程和站点快照为数据源，构建 Bronze、Silver、Gold 三层离线湖仓。流水线支持显式 Schema、分区增量覆盖、冲突去重、站点 SCD2、热门路线与 cohort 留存分析，并提供日期回填、质量门禁、小文件压实、Airflow 编排和可恢复执行日志。
 
-- [x] 在 Windows 11 + WSL、Python 3.14、JDK 17 环境真实启动 Spark 4.2.0 `local[2]`，完成 DataFrame 聚合与 Parquet 往返读写。
-- [x] 定义脱敏共享单车行程与站点快照契约。
-- [x] 实现固定随机种子的确定性测试数据生成器。
-- [x] 使用显式 Spark Schema 读取 NDJSON，不依赖自动推断业务类型。
-- [x] 将 Bronze 行程写为按 `ingestion_date` 分区的 Parquet。
-- [x] 使用动态分区覆盖实现同批次安全重跑，并保留未触及日期分区。
-- [x] 实现 Silver 合法性校验、最小披露拒绝数据、精确/冲突去重与派生字段。
-- [x] 实现站点快照校验、冲突隔离与 SCD2 历史维度。
-- [x] 实现 Gold 日指标、SCD2 时态关联和分区 Top 路线。
-- [x] 为 Bronze 摄取加入确定性批次 ID、文件指纹和原子状态清单。
-- [x] 实现单日期预检、跨分区主键保护、Silver/Gold 受影响分区重算，以及 cohort 旧/新归属日期依赖传播。
-- [x] 实现跨层行数、Silver 拒绝/重复率、SCD2 区间、Gold 汇总和路线排名质量门禁。
-- [x] 完成固定输入、预热加三轮测量的本机端到端性能证据。
-- [x] 使用纯合成匿名骑行者键实现 cohort 留存分析。
-- [x] 完成 Sort-Merge Join、显式 Broadcast Hash Join 与 AQE 的真实格式化物理计划证据。
-- [x] 构造 90% 热点键倾斜场景，验证 AQE 最终计划的分区合并与倾斜 Join 拆分。
-- [x] 通过 Spark UI `/api/v1` 保存 Job、Stage 和 Task 级 Shuffle、耗时、GC 与 Spill 指标。
-- [x] 使用真实五阶段 Spark 链路验证依赖编排、失败重试、日志哈希与断点恢复。
-- [x] 使用 Airflow 3.1.6 TaskFlow DAG 运行同一五阶段任务图，并验证原生重试与阻塞式质量门禁。
-- [x] 新增带类型化运行参数的 Airflow 日期回填 DAG，验证成功重试、失败回调审计和写前保护。
-- [x] 提供适配 Windows/WSL 与 Linux 的环境自检和结构化诊断报告。
-- [x] 在 Windows、Ubuntu 和 macOS 干净环境验证安装、数据生成与契约入口。
-- [x] 提供跨平台数据源和完整 Spark 湖仓两档一键入口，并支持编排状态续跑。
-- [x] 提供自动创建、复用和更新项目隔离环境的跨平台启动器。
-- [x] 实现缺失分区计划的全量预检、dry-run、顺序执行与断点恢复。
-- [x] 实现修复来源目录的确定性清单生成、命名约束和 SHA-256 血缘记录。
-- [x] 为修复执行增加逐动作、立即刷盘的追加式审计日志。
-- [x] 增加 Parquet 分区小文件扫描、确定性压缩计划、写前指纹复核和行数守恒替换。
-
-## 项目范围
-
-本仓库聚焦批处理与离线数仓，与实时数据仓库项目分别维护：
-
-| 项目 | 主要证据 |
+| 关注点 | 项目实现 |
 | --- | --- |
-| 电商实时数据仓库 | Kafka、Flink、ClickHouse、Watermark、状态去重、至少一次写入 |
-| 共享单车离线湖仓 | Spark DataFrame/SQL、Parquet 分区、增量覆盖、SCD2、离线质量与回填 |
+| 数据分层 | Bronze 原始层、Silver 标准层、Gold 指标层 |
+| 增量处理 | 日期分区覆盖、批次清单、跨分区主键保护 |
+| 维度建模 | 站点 SCD2、行程事实与时态关联 |
+| 数据治理 | 拒绝分流、跨层对账、回填审计、小文件压实 |
+| 调度运维 | 本地任务图、重试恢复、Airflow TaskFlow DAG |
 
-## 实现数据流
+## 快速启动
 
-```mermaid
-flowchart LR
-    A[确定性行程与站点快照] --> B[Bronze 原始 Parquet]
-    B --> C[Silver 校验 去重 标准化]
-    A --> D[Silver 站点 SCD2]
-    C --> E[Gold 日指标 热门路线 Cohort留存]
-    D --> E
-    E --> F[跨层数据质量报告]
-    B --> G[批次清单与受控回填]
-    G --> F
-```
-
-## 当前目录
-
-```text
-bike-trip-lakehouse/
-├─ .github/workflows/        持续集成
-├─ dags/                     Airflow TaskFlow DAG
-├─ data/sample/              固定脱敏正常样例
-├─ data/quality/             固定质量异常测试批次
-├─ docs/                     需求、架构和技术文档
-├─ evidence/                 经核验的原始性能证据
-├─ scripts/                  环境探测、生成和测试脚本
-├─ src/bike_lakehouse/       分层作业、控制流程、质量与基准代码
-├─ tests/                    Python 与本地 Spark 测试
-├─ pyproject.toml
-└─ README.md
-```
-
-## 环境
-
-- Python 3.10 或更高版本；
-- JDK 17 或更高版本；
-- PySpark 4.2.0；
-- 可选 Airflow 验收使用隔离的 Python 3.12 与 Airflow 3.1.6。
-
-安装依赖：
-
-```powershell
-python -m pip install -e .
-```
-
-全新检出或 ZIP 解压后，也可以由启动器创建项目隔离环境并直接运行：
+仅运行数据生成和契约校验：
 
 ```powershell
 python scripts/bootstrap.py -- --mode source
+```
+
+在 Linux、macOS 或配置好 WSL 的 Windows 上运行完整湖仓：
+
+```powershell
 python scripts/bootstrap.py -- --mode pipeline
 ```
 
-启动器不修改系统 Python；`source` 不下载 PySpark，`pipeline` 才准备完整依赖。默认使用路径较短的用户缓存目录，避免深层 ZIP 解压位置放大 Windows 路径限制。参数、更新规则和平台边界见[隔离运行时启动器](docs/portable-runtime.md)。
+主要结果位于 `build/quickstart/`，包括分层 Parquet、质量报告、编排状态和运行摘要。
 
-运行跨平台数据源入口，或运行完整湖仓：
+## 数据架构
 
-```powershell
-python scripts/quickstart.py --mode source
-python scripts/quickstart.py --mode pipeline
+```mermaid
+flowchart LR
+    A[行程与站点快照] --> B[Bronze 分区 Parquet]
+    B --> C[Silver 校验 去重 标准化]
+    A --> D[站点 SCD2]
+    C --> E[Gold 日指标]
+    D --> E
+    E --> F[热门路线与 Cohort 留存]
+    B --> G[日期回填与批次清单]
+    C --> H[质量报告]
+    D --> H
+    F --> H
+    C --> I[小文件压实]
 ```
 
-`source` 在 Windows、Ubuntu 和 macOS 直接生成已校验的行程与站点数据；`pipeline` 继续构建 Bronze、Silver、站点 SCD2、Gold 和质量报告。在 Windows 上完整模式自动使用 WSL。输出契约和续跑行为见[一键本地运行](docs/quickstart.md)。
+## 核心能力
 
-安装后先检查当前运行环境：
+### 分层湖仓
 
-```powershell
-python scripts/project_doctor.py --profile source
-python scripts/project_doctor.py --profile pipeline
-python scripts/project_doctor.py --profile airflow --json-output build/doctor/report.json --markdown-output build/doctor/report.md
+- 使用显式 Spark Schema 读取 NDJSON，按摄取日期写入 Bronze Parquet。
+- 将合法、拒绝、重复和冲突记录分流，并派生业务日期与行程时长。
+- 构建日指标、热门路线和 cohort 留存结果。
+
+### 增量与回填
+
+- 使用文件指纹和批次 ID 保证相同输入可安全重复执行。
+- 回填前完成日期、路径和跨分区主键预检，仅重算受影响分区。
+- 运行状态原子落盘，失败任务可按已有进度恢复。
+
+### 质量与存储治理
+
+- 检查分区连续性、新鲜度、行数守恒、拒绝率、SCD2 区间和 Gold 汇总。
+- 对 Parquet 分区画像并生成稳定压实计划，执行前再次核对来源指纹。
+- 压实日志提供完成比例、恢复状态和调度门禁退出码。
+
+### 调度与可观测性
+
+- 本地编排器与 Airflow DAG 复用同一任务定义。
+- 保存 Job、Stage 和 Task 级 Shuffle、耗时、GC 与 Spill 指标。
+- 保留物理计划、运行清单和审计报告，便于复核执行过程。
+
+## 工程结构
+
+```text
+dags/                   Airflow TaskFlow DAG
+data/                   匿名样例与质量场景
+docs/                   架构和操作文档
+evidence/               性能与执行计划证据
+scripts/                启动、回填、压实和验收入口
+src/bike_lakehouse/     分层作业与控制逻辑
+tests/                  Python 与 Spark 验证
 ```
 
-`source` 只检查跨平台数据源入口；Windows 的 `pipeline` 和 `airflow` 会检查 WSL 与仓库隔离运行时，Linux/macOS 则检查当前 Python 与 JDK。详细说明见[环境自检](docs/environment-preflight.md)。
-
-`.github/workflows/portable-smoke.yml` 会在三个桌面平台从全新检出执行 `source` 一键入口；Ubuntu 与 macOS 还会执行完整五阶段 Spark 湖仓入口。Windows 的完整 Parquet 流程仍通过 WSL 入口执行。
-
-Windows 本机的 Hadoop 文件系统实现写 Parquet 需要额外的 `winutils.exe`。本项目不下载来源不明的二进制文件，而是在 WSL 中运行 Spark；项目脚本使用微软官方免安装 JDK 17，只写入被 Git 忽略的 `build/tools/`，不修改系统 Java。
-
-仓库通过 `.gitattributes` 固定 WSL Shell 脚本使用 LF 换行符，因此从 Windows 克隆或下载后可直接交给 WSL 执行，不受本机 Git `core.autocrlf` 设置影响。
-
-首次准备：
-
-```powershell
-python -m pip install -e .
-./scripts/setup-wsl-tools.ps1
-```
-
-默认 WSL 发行版名为 `Ubuntu`；如名称不同，可通过 `BIKE_LAKEHOUSE_WSL_DISTRO` 环境变量指定。第一次准备会下载约 183 MB 的官方 JDK，之后测试和构建会复用本地文件。
-
-## 生成固定样例
-
-```powershell
-./scripts/generate-sample.ps1
-```
-
-默认生成 20 条 `2026-10-01` 行程和一份站点快照。相同日期、数量和随机种子产生相同内容；`rider_key` 只由固定种子和 UUID5 生成，不来源于或映射任何真人，数据不包含姓名、电话、定位轨迹或真实卡号。
-
-## Bronze 装载
-
-```powershell
-./scripts/build-bronze.ps1
-```
-
-输出位于被 Git 忽略的 `build/lakehouse/bronze/trips/`，按 `ingestion_date=YYYY-MM-DD` 分区。脚本使用动态分区覆盖：重跑某日只替换该日分区，不删除其他日期。
-
-每次摄取还会在 `build/lakehouse/control/bronze_batches/` 写入原子 JSON 批次清单。批次 ID 由摄取日期与来源文件 SHA-256 确定；同批重跑更新同一记录并增加 `attempt_count`，不会制造重复清单。记录包含输入字节数、输入/损坏/输出行数、UTC 起止时间，以及 `RUNNING`、`SUCCEEDED` 或 `FAILED` 状态。
-
-## Silver 质量与去重
-
-```powershell
-./scripts/build-silver.ps1
-```
-
-Silver 将完整重建三个数据集：
-
-- `trips_valid`：通过规则、去重后的行程，并派生业务日期和骑行分钟数；
-- `trips_rejected`：业务或结构失败记录，损坏原文只保留 SHA-256 指纹和字节数；
-- `trips_duplicates`：区分完全相同的重复投递与同 ID 不同内容的主键冲突。
-
-质量异常验证：
-
-```powershell
-./scripts/silver-quality-demo.ps1
-```
-
-固定 12 行输入会产生 1 条合法记录、8 条拒绝记录、1 条精确重复和 2 条冲突重复。
-
-## 站点 SCD2 维度
-
-```powershell
-./scripts/build-station-dimension.ps1
-```
-
-作业读取多日全量站点快照，先校验业务字段，再区分完全重复与同站点同日期的冲突记录。站点名称、行政区、容量或启用状态变化时才生成新版本；有效期采用左闭右开区间 `[valid_from, valid_to)`，当前版本的 `valid_to` 为 `null`。
-
-固定两日样例共 16 条合法快照，生成 11 个维度版本和 8 个当前版本。`ST-003` 容量、`ST-005` 名称和 `ST-008` 启用状态发生变化，可用于手工核对版本切换。输出位于 `build/lakehouse/dim/`。
-
-## Gold 日指标与热门路线
-
-```powershell
-./scripts/build-gold.ps1
-```
-
-Gold 先按行程业务日期分别关联起点、终点在当日有效的 SCD2 站点版本，再生成三个数据集：
-
-- `daily_metrics`：按日期、起点行政区、骑行者类型和车辆类型统计行程数、总/平均时长与总距离；
-- `popular_routes`：按日期和起点行政区对路线计数，使用确定性排序保留 Top 3。
-- `cohort_retention`：按匿名骑行者首次骑行日分 cohort，统计每个活动日的 cohort 规模、留存人数和四位小数留存率。
-
-若任一起终站点无法匹配当日有效版本，作业直接失败而不是静默丢弃行程。固定 20 条正常样例会生成 10 行日指标、9 行热门路线和 1 行第 0 天 cohort 留存；5 条跨日测试样例的聚合与留存值可手工核对，并验证站点跨日变更后使用正确历史属性。
-
-## 受控日期回填
-
-```powershell
-./scripts/backfill-date.ps1 `
-    -InputPath data/sample/trips.ndjson `
-    -TargetDate 2026-10-01
-```
-
-回填先确认输入中所有可解析的业务日期都等于目标日期，并在写入前检查合法 `trip_id` 是否跨摄取日期；若违反分区隔离约束则失败且不改写 Bronze。通过预检后只覆盖目标 Bronze 与 Silver 摄取分区，并只重算目标业务日期的 Gold 日指标和热门路线。对于 cohort，作业物化回填前后受影响骑行者，合并其旧、新 cohort 日期，只替换这些 cohort 分区；为保证聚合口径正确，计算仍扫描完整 Silver 活动数据。控制清单记录受影响骑行者数、分区列表、写入范围与计算范围。自动化测试比较非目标分区的 Parquet 文件 SHA-256，并验证骑行者 cohort 前移时旧、新两个分区都会被重算。
-
-缺失分区修复工具先扫描指定日期范围，结合带 SHA-256 的来源目录生成确定性计划，将动作区分为 `READY` 和 `BLOCKED_SOURCE_MISSING`。回填完成后的审计同时要求目标分区存在且具有来源指纹完全匹配的成功清单，避免只凭目录出现就判定补数完成。
-
-## 跨层数据质量报告
-
-```powershell
-./scripts/build-quality-report.ps1
-```
-
-报告写入 `build/reports/data-quality.json`，检查 Bronze 最新分区是否满足显式新鲜度要求、必需日期范围是否连续、行数能否由 Silver 合法/拒绝/重复数据完整对账、拒绝率与重复率是否超过默认 5% 阈值，以及 SCD2、Gold 聚合、Top 路线和 cohort 留存约束。当前正式样例 10 项检查全部为 `PASS`。
-
-## Parquet 小文件治理
-
-先生成确定性压缩计划；确认计划后再执行分区替换：
-
-```powershell
-./scripts/compact-lakehouse.ps1 `
-  -Dataset build/lakehouse/silver/trips_valid `
-  -PartitionColumn business_date
-
-./scripts/compact-lakehouse.ps1 `
-  -Dataset build/lakehouse/silver/trips_valid `
-  -PartitionColumn business_date `
-  -Execute
-```
-
-计划按分区记录输入文件数、字节数、目标文件数和内容指纹。执行前重新核对指纹，使用临时目录写入并验证行数守恒，成功后才替换原分区；执行日志按动作保存完成状态，中断后再次执行同一计划会复用已完成动作。审计报告与执行日志位于 `build/compaction/`。详细边界见[Parquet 分区小文件治理](docs/parquet-compaction.md)。
-
-## 本机性能证据
-
-```powershell
-./scripts/run-benchmark.ps1
-```
-
-固定 10,000 行、2,957,025 字节 NDJSON，在 WSL2、Spark 4.2.0、JDK 17、Python 3.14.4、`local[2]`、约 7.35 GiB 可用内存环境中，复用单个 Spark 会话，先预热 1 轮再测量 3 轮。端到端完整执行 Bronze 覆盖、Silver 全量重建，以及包含日指标、路线和 cohort 留存的 Gold 全量重建，中位耗时 19.995 秒，即 500.13 输入行/秒；Spark/JVM 启动和测试数据生成不计入。
-
-三轮端到端原始耗时为 21.782、19.995、19.906 秒；阶段中位数为 Bronze 1.883 秒、Silver 5.931 秒、Gold 12.508 秒。每轮都输出 10,000 行合法 Silver、108 行日指标、81 行热门路线和 45 行 cohort 留存。完整环境、输入 SHA-256、方法和逐轮结果见 [`evidence/benchmark-10000-local.json`](evidence/benchmark-10000-local.json)。这些数字只代表该本机基准，不外推为生产集群能力。
-
-## 自动化验证
-
-```powershell
-./scripts/test-all.ps1
-```
-
-当前 63 项检查覆盖确定性、契约、金额/时间边界、匿名键格式与隐私字段、显式 Spark Schema、Parquet 类型、同分区幂等重跑、跨日期分区保留、批次状态与失败记录、小文件压缩计划和安全替换、单日期回填、跨分区主键保护、cohort 依赖传播、质量分流、SCD2、Gold 时态关联与留存、真实 Spark 物理计划、Spark UI REST 指标，以及共享任务定义、依赖、重试、恢复、任务图、回调最小披露和输入路径约束。GitHub CI 另有独立 Airflow Job，安装受官方约束文件锁定的 Airflow 3.1.6，并验证完整构建与日期回填两个 DAG 的导入、参数、依赖和重试配置。
-
-## Spark 执行计划证据
-
-```powershell
-./scripts/explain-spark-plans.ps1
-```
-
-固定 1,000 行事实表与 8 行维度表实验中，禁用自动广播的基线计划出现 `SortMergeJoin` 和 `Exchange`；显式广播后出现 `BroadcastHashJoin` 与 `BroadcastExchange`，两种计划的聚合结果完全相同。执行同一个 AQE 聚合并在原 DataFrame 上触发 action 后，最终计划为 `isFinalPlan=true`，出现 `AQEShuffleRead coalesced`。
-
-另一个受控实验生成 20,000 行事实数据，其中 90% 使用同一个热点键。禁用 AQE 的结果作为基线；开启 AQE 倾斜优化后，最终计划出现 `SortMergeJoin(skew=true)` 与 `AQEShuffleRead ... skewed`，8 个分组的行数和载荷字符总数与基线完全一致。原始 JSON 与展开计划见 [`evidence/spark-plan-analysis-local.json`](evidence/spark-plan-analysis-local.json) 和 [`evidence/spark-plan-analysis-local.md`](evidence/spark-plan-analysis-local.md)。这些实验只证明本机合成数据上的计划变化和结果等价，不是生产性能提升或 SLA 证据。
-
-## Spark UI Stage/Task 指标证据
-
-```powershell
-./scripts/explain-spark-stage-metrics.ps1
-```
-
-脚本在 Spark 停止前调用 UI 的 `/api/v1`，按 Job Group 定位受控的 50,000 行聚合作业，再保存 Job、完成 Stage 和任务级指标。本机证据包含 1 个 Job、2 个完成 Stage、10 个 Task，累计 Shuffle 写入与读取均为 3,302,403 字节，内存与磁盘 Spill 均为 0；最繁忙 Shuffle Stage 的 8 个任务还保留执行时间、CPU、GC 和逐任务 Shuffle 字节数。原始证据见 [`evidence/spark-stage-metrics-local.json`](evidence/spark-stage-metrics-local.json) 与 [`evidence/spark-stage-metrics-local.md`](evidence/spark-stage-metrics-local.md)。耗时受 JVM 预热和本机调度影响，不能仅凭最大/中位数比值断言数据倾斜，也不能外推集群容量。
-
-当前仓库位于包含中文的 Windows 路径，Spark 4.2 的 Jetty 静态资源加载会打印 `Bad escape` 告警，但已实测 `/api/v1` JSON 指标接口可用；因此仓库保存的是 REST 原始指标，不把本机静态网页截图作为证据。
-
-## 作业编排、重试与恢复
-
-```powershell
-# 故障注入：Silver 第一次失败，第二次自动重试
-./scripts/run-managed-pipeline.ps1 `
-  -RunRoot build/managed-pipeline-evidence `
-  -RunId retry-evidence-20261005 `
-  -InjectFailureOnce silver
-
-# 对同一状态执行恢复，已成功任务不会重跑
-./scripts/run-managed-pipeline.ps1 `
-  -RunRoot build/managed-pipeline-evidence `
-  -RunId retry-evidence-20261005 `
-  -Resume
-```
-
-编排图为 Bronze → Silver、独立站点 SCD2、Silver + SCD2 → Gold、Gold → 质量门禁。运行清单在每次状态变化后原子落盘，并为每次尝试保存退出码、相对日志路径和 SHA-256。真实证据中 Silver 第一次以受控退出码 75 失败，第二次成功；Bronze、站点维表、Gold 和质量门禁均只执行一次。随后恢复运行跳过全部5个成功任务，任务尝试次数保持不变。证据见 [`evidence/orchestration-retry-local.json`](evidence/orchestration-retry-local.json) 和 [`evidence/orchestration-retry-local.md`](evidence/orchestration-retry-local.md)。
-
-这是单机、进程级的编排核心，用于验证依赖、重试、恢复和审计语义；Airflow 适配器复用同一任务定义，不重复维护业务命令。
-
-## Airflow DAG 本地验收
-
-```powershell
-# 首次执行会在 Git 忽略的 build 目录安装 Python 3.12 和 Airflow 3.1.6
-./scripts/setup-airflow.ps1
-
-# 真实执行五阶段 DAG，并让 Silver 首次失败以验证 Airflow 原生重试
-./scripts/run-airflow-dag.ps1
-```
-
-`dags/bike_lakehouse_airflow.py` 使用 TaskFlow API 定义 5 个任务，每个任务允许一次重试。DAG 与本地编排器都从 `pipeline_definition.py` 读取相同命令和依赖。实际 `DAG.test()` 运行中，Silver 首次进入 `up_for_retry`，第二次成功；Gold 等待 Silver 与站点维表成功，最终质量门禁通过，DAG Run 为 `SUCCESS`。证据见 [`evidence/airflow-dag-test-local.json`](evidence/airflow-dag-test-local.json) 和 [`evidence/airflow-dag-test-local.md`](evidence/airflow-dag-test-local.md)。
-
-参数化日期回填另提供 `bike_lakehouse_date_backfill` DAG：
-
-```powershell
-# 先完成一次全量基线，再分别执行有效与无效日期回填
-./scripts/run-airflow-backfill.ps1
-```
-
-DAG 使用 `target_date` 和仓库 `data/` 目录内的 `input_path` 两个运行参数，先校验日期格式、文件存在性和路径边界，再执行回填与阻塞式质量门禁。验收中，有效回填首次受控失败、第二次成功并通过 6 项质量检查；日期不匹配的回填耗尽两次尝试后失败，质量任务为 `UPSTREAM_FAILED`，失败前后 Bronze 文件 SHA-256 指纹完全一致。回调审计只保存事件类型、DAG/任务/Run ID、尝试次数，以及 Airflow 上下文可提供的异常类型，不复制异常正文或业务数据。证据见 [`evidence/airflow-backfill-local.json`](evidence/airflow-backfill-local.json) 和 [`evidence/airflow-backfill-local.md`](evidence/airflow-backfill-local.md)。
-
-这些证据是 Airflow 3.1.6、SQLite 元数据库和 Spark `local[2]` 的单机 `DAG.test()` 验收；本地 JSONL 回调审计不等同于邮件或企业告警，也未验证长期运行的 Scheduler、分布式 Executor、高可用元数据库、并发回填、权限审批或生产 SLA。
-
-## 一键项目验收
-
-```powershell
-./scripts/run-project-acceptance.ps1
-```
-
-脚本使用隔离的 `build/project-acceptance/` 输出目录，依次重建所有数据层、执行 6 项跨层质量门禁、验证 Spark 物理计划并运行包含 UI REST 与编排语义的全部测试，最终输出机器可读摘要。架构、数据粒度和约束见 [`docs/architecture.md`](docs/architecture.md)，公开仓库与远程 CI 的验收证据见 [`docs/publishing-checklist.md`](docs/publishing-checklist.md)。
-
-## 当前边界
-
-- Spark 当前只在单机 `local[2]` 模式运行，不能表述为生产集群经验。
-- Windows 原生 Spark 仅做过 DataFrame 聚合验证；涉及 Hadoop 文件系统的 Parquet 测试和构建统一在 WSL/Linux 执行，CI 也使用 Linux。
-- Bronze、批次清单、受控分区回填、行程 Silver、站点 SCD2、Gold 日指标、热门路线、cohort 留存、跨层质量报告和性能证据均已完成。回填已做到 Silver、日指标、路线和 cohort 的受影响分区写入；cohort 计算仍进行全量 Silver 扫描。项目已完成 Airflow 完整构建与参数化回填的本地 DAG 验收，但没有跨作业事务提交、并发回填锁、长期运行的生产 Scheduler、分布式 Executor 或事务湖仓能力。
-- 没有脚本和原始报告前，不写吞吐、延迟或节省比例。
+## 常用入口
+
+| 目标 | 命令或入口 |
+| --- | --- |
+| 环境检查 | `python scripts/project_doctor.py --profile full` |
+| 完整湖仓 | `python scripts/quickstart.py --mode pipeline` |
+| 日期回填 | `./scripts/backfill-date.ps1 -IngestionDate 2026-10-01` |
+| 小文件治理 | `./scripts/compact-lakehouse.ps1` |
+| 压实状态 | `inspect-compaction-journal build/compaction/journal.json --pretty` |
+| 工程验收 | `./scripts/run-project-acceptance.ps1` |
+
+## 项目文档
+
+- [用户使用指南](docs/user-guide.md)
+- [系统架构](docs/architecture.md)
+- [增量处理与回填](docs/controlled-backfill.md)
+- [数据质量报告](docs/cross-layer-quality.md)
+- [Parquet 小文件治理](docs/parquet-compaction.md)
+- [任务编排与恢复](docs/orchestration-retry.md)
+- [Airflow DAG](docs/airflow-dag.md)
+
+## 运行边界
+
+- 数据全部为匿名合成数据，不包含真实骑行者和站点运营信息。
+- Windows 原生环境适合数据源流程；完整 Parquet 流水线使用 WSL/Linux 或 macOS。
+- 当前运行模式为 Spark `local[2]`，性能结果不代表分布式生产集群容量。
+- 回填和压实具备写前保护与恢复能力，但不等同于事务湖表格式。
+
+## 版本与维护
+
+当前版本为 `v0.12.2`。每次发布同步维护[用户使用指南](docs/user-guide.md)、[版本记录](CHANGELOG.md)和[版本摘要](VERSION_LOG.md)。
