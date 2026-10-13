@@ -92,3 +92,58 @@ class CompactionTests(unittest.TestCase):
                     writer=lambda *_: WriteResult(0, 0),
                     report_path=Path(directory) / "report.json",
                 )
+
+    def test_journal_resumes_after_an_interrupted_plan(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "trips"
+            self._partition(root, "ingestion_date=2026-10-01", 5)
+            self._partition(root, "ingestion_date=2026-10-02", 5)
+            plan = build_compaction_plan(
+                root,
+                partition_column="ingestion_date",
+                target_file_size_bytes=1024,
+                min_files=4,
+            )
+            journal_path = Path(directory) / "journal.json"
+            calls: list[str] = []
+
+            def interrupted_writer(source: Path, staging: Path, _: int) -> WriteResult:
+                calls.append(source.name)
+                if source.name.endswith("10-02"):
+                    raise RuntimeError("interrupted")
+                rows = sum(path.read_bytes().count(b"\n") for path in source.glob("*.parquet"))
+                staging.mkdir(parents=True)
+                (staging / "part-00000.parquet").write_bytes(b"row\n" * rows)
+                return WriteResult(rows, rows)
+
+            with self.assertRaisesRegex(RuntimeError, "interrupted"):
+                execute_compaction_plan(
+                    root,
+                    plan,
+                    writer=interrupted_writer,
+                    report_path=Path(directory) / "first-report.json",
+                    journal_path=journal_path,
+                )
+
+            resumed_calls: list[str] = []
+
+            def resumed_writer(source: Path, staging: Path, _: int) -> WriteResult:
+                resumed_calls.append(source.name)
+                rows = sum(path.read_bytes().count(b"\n") for path in source.glob("*.parquet"))
+                staging.mkdir(parents=True)
+                (staging / "part-00000.parquet").write_bytes(b"row\n" * rows)
+                return WriteResult(rows, rows)
+
+            report = execute_compaction_plan(
+                root,
+                plan,
+                writer=resumed_writer,
+                report_path=Path(directory) / "final-report.json",
+                journal_path=journal_path,
+            )
+            self.assertEqual(["ingestion_date=2026-10-02"], resumed_calls)
+            self.assertEqual(1, report["reused_action_count"])
+            self.assertEqual(1, report["executed_action_count"])
+            journal = json.loads(journal_path.read_text(encoding="utf-8"))
+            self.assertEqual("SUCCEEDED", journal["status"])
+            self.assertEqual(2, len(journal["completed_actions"]))

@@ -7,7 +7,7 @@
 
 本项目为独立实现，所有输入、处理逻辑、验证脚本和证据均保存在当前仓库中。
 
-当前版本：`v0.9.0`。版本变更见 [CHANGELOG](CHANGELOG.md)，版本摘要见 [VERSION_LOG](VERSION_LOG.md)。
+当前版本：`v0.9.1`。版本变更见 [CHANGELOG](CHANGELOG.md)，版本摘要见 [VERSION_LOG](VERSION_LOG.md)。
 
 ## 当前进度
 
@@ -233,7 +233,7 @@ Gold 先按行程业务日期分别关联起点、终点在当日有效的 SCD2 
   -Execute
 ```
 
-计划按分区记录输入文件数、字节数、目标文件数和内容指纹。执行前重新核对指纹，使用临时目录写入并验证行数守恒，成功后才替换原分区；审计报告位于 `build/compaction/`。详细边界见[Parquet 分区小文件治理](docs/parquet-compaction.md)。
+计划按分区记录输入文件数、字节数、目标文件数和内容指纹。执行前重新核对指纹，使用临时目录写入并验证行数守恒，成功后才替换原分区；执行日志按动作保存完成状态，中断后再次执行同一计划会复用已完成动作。审计报告与执行日志位于 `build/compaction/`。详细边界见[Parquet 分区小文件治理](docs/parquet-compaction.md)。
 
 ## 本机性能证据
 

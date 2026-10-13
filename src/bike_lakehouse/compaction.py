@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 import hashlib
+import json
 import math
 from pathlib import Path
 import shutil
@@ -56,6 +57,18 @@ class WriteResult:
 
 
 PartitionWriter = Callable[[Path, Path, int], WriteResult]
+
+
+def compaction_plan_id(plan: CompactionPlan) -> str:
+    identity = {
+        "dataset": plan.dataset,
+        "partition_column": plan.partition_column,
+        "target_file_size_bytes": plan.target_file_size_bytes,
+        "min_files": plan.min_files,
+        "actions": [asdict(action) for action in plan.actions],
+    }
+    canonical = json.dumps(identity, sort_keys=True, separators=(",", ":"))
+    return "plan-" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:20]
 
 
 def profile_partition(
@@ -198,22 +211,81 @@ def execute_compaction_plan(
     *,
     writer: PartitionWriter,
     report_path: Path,
+    journal_path: Path | None = None,
 ) -> dict[str, object]:
-    results = [
-        execute_compaction_action(
-            dataset,
-            action,
-            target_file_size_bytes=plan.target_file_size_bytes,
-            writer=writer,
-        )
-        for action in plan.actions
-    ]
+    plan_id = compaction_plan_id(plan)
+    journal_file = Path(journal_path) if journal_path is not None else None
+    journal: dict[str, object] = {
+        "journal_version": "1.0",
+        "plan_id": plan_id,
+        "dataset": plan.dataset,
+        "status": "RUNNING",
+        "updated_at_utc": utc_timestamp(),
+        "completed_actions": {},
+    }
+    if journal_file is not None and journal_file.exists():
+        loaded = json.loads(journal_file.read_text(encoding="utf-8"))
+        if loaded.get("journal_version") != "1.0":
+            raise ValueError("unsupported compaction journal version")
+        if loaded.get("plan_id") != plan_id:
+            raise ValueError("compaction journal does not match the current plan")
+        if not isinstance(loaded.get("completed_actions"), dict):
+            raise ValueError("compaction journal completed_actions must be an object")
+        journal = loaded
+        journal["status"] = "RUNNING"
+        journal["updated_at_utc"] = utc_timestamp()
+
+    completed = journal["completed_actions"]
+    assert isinstance(completed, dict)
+    results: list[dict[str, object]] = []
+    executed_count = 0
+    reused_count = 0
+    for action in plan.actions:
+        previous = completed.get(action.action_id)
+        if isinstance(previous, dict) and previous.get("status") == "SUCCEEDED":
+            results.append({**previous, "execution": "REUSED"})
+            reused_count += 1
+            continue
+        try:
+            result = execute_compaction_action(
+                dataset,
+                action,
+                target_file_size_bytes=plan.target_file_size_bytes,
+                writer=writer,
+            )
+        except Exception as error:
+            journal.update(
+                {
+                    "status": "FAILED",
+                    "updated_at_utc": utc_timestamp(),
+                    "failed_action_id": action.action_id,
+                    "failure_type": type(error).__name__,
+                }
+            )
+            if journal_file is not None:
+                write_json_atomic(journal_file, journal)
+            raise
+        completed[action.action_id] = result
+        results.append({**result, "execution": "EXECUTED"})
+        executed_count += 1
+        journal.update({"status": "RUNNING", "updated_at_utc": utc_timestamp()})
+        if journal_file is not None:
+            write_json_atomic(journal_file, journal)
+
+    journal.update({"status": "SUCCEEDED", "updated_at_utc": utc_timestamp()})
+    journal.pop("failed_action_id", None)
+    journal.pop("failure_type", None)
+    if journal_file is not None:
+        write_json_atomic(journal_file, journal)
     report = {
         "report_version": "1.0",
         "generated_at_utc": utc_timestamp(),
         "dataset": plan.dataset,
+        "plan_id": plan_id,
         "status": "SUCCEEDED",
         "action_count": len(results),
+        "executed_action_count": executed_count,
+        "reused_action_count": reused_count,
         "actions": results,
     }
     write_json_atomic(report_path, report)

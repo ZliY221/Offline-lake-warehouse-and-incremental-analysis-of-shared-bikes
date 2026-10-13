@@ -31,6 +31,11 @@ def main() -> None:
         type=Path,
         default=Path("build/compaction/report.json"),
     )
+    parser.add_argument(
+        "--journal-output",
+        type=Path,
+        default=Path("build/compaction/journal.json"),
+    )
     args = parser.parse_args()
     plan = build_compaction_plan(
         args.dataset,
@@ -53,6 +58,7 @@ def main() -> None:
             plan,
             writer=spark_partition_writer(spark),
             report_path=args.report_output,
+            journal_path=args.journal_output,
         )
         print(json.dumps(report, ensure_ascii=False, sort_keys=True))
     finally:
