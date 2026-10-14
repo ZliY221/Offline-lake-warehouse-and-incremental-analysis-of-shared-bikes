@@ -1,6 +1,6 @@
 # 用户使用指南
 
-适用版本：`v0.12.2`
+适用版本：`v0.12.3`
 
 本指南随项目版本同步更新，覆盖当前版本的启动、增量处理、质量治理和恢复操作。首次使用建议先阅读仓库首页的项目简介、数据架构和常用入口，再按本指南选择运行模式。
 
@@ -76,13 +76,21 @@ inspect-compaction-journal build/compaction/journal.json --require-complete
 - `scripts/explain-spark-plans.ps1`：保存物理计划对比。
 - `scripts/explain-spark-stage-metrics.ps1`：采集 Job、Stage 和 Task 指标。
 
-## 7. 常见问题
+## 7. 工程验证
+
+```powershell
+./scripts/run-project-acceptance.ps1
+```
+
+验收入口依次构建 Bronze、Silver、维表和 Gold 数据，检查质量报告与 Spark 物理计划，再执行 Python、Spark 和仓库发布内容检查。仅需重新执行自动化检查时可以运行 `./scripts/test-all.ps1`。
+
+## 8. 常见问题
 
 - 找不到 Java：将 `JAVA_HOME` 指向 JDK 17。
 - Windows 中文路径出现 Spark UI 警告：数据计算不受影响；需要 UI 时可将仓库检出到纯英文短路径。
 - WSL 流程无法启动：先执行 `./scripts/setup-wsl-tools.ps1`。
 - 压实拒绝执行：分区在计划生成后发生变化，应重新生成计划，不要覆盖日志中的指纹校验。
 
-## 8. 数据边界
+## 9. 数据边界
 
 样例行程和骑行者标识均为合成数据。运行产物写入 `build/`，分区替换前会进行行数与指纹核对。
