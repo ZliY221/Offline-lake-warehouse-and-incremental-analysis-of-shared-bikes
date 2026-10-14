@@ -1,6 +1,6 @@
 # 用户使用指南
 
-适用版本：`v0.12.3`
+适用版本：`v0.13.3`
 
 本指南随项目版本同步更新，覆盖当前版本的启动、增量处理、质量治理和恢复操作。首次使用建议先阅读仓库首页的项目简介、数据架构和常用入口，再按本指南选择运行模式。
 
@@ -44,6 +44,14 @@ python scripts/bootstrap.py -- --mode pipeline
 ```
 
 质量报告检查分区连续性、新鲜度和分层数据约束。修复计划在执行前核对来源指纹，执行后验证目标分区并保存审计记录。
+
+对比已保存的基线报告与本次候选报告：
+
+```powershell
+python -m bike_lakehouse.quality_compare_cli --baseline build/quality/baseline.json --candidate build/quality/report.json --output build/quality/comparison.json --fail-on-regression
+```
+
+对比结果列出每项检查的原状态、当前状态和变化类型；候选报告将原本正常的检查变为失败或缺失时，`--fail-on-regression` 返回状态码 `1`。恢复项单独记录，不会触发回退门禁。
 
 ## 5. 小文件压实
 
