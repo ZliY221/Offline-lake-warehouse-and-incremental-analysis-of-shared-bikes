@@ -104,6 +104,15 @@ def _write_marker(runtime_dir: Path, signature: dict[str, object]) -> None:
     temporary.replace(marker)
 
 
+def _runtime_environment() -> dict[str, str]:
+    environment = os.environ.copy()
+    environment.pop("PYTHONPATH", None)
+    environment["PYTHONNOUSERSITE"] = "1"
+    environment["PYTHONUTF8"] = "1"
+    environment["PYTHONIOENCODING"] = "utf-8"
+    return environment
+
+
 def _prepare_runtime(runtime_dir: Path, refresh: bool, install_scope: str) -> Path:
     signature = _runtime_signature(install_scope)
     python = _runtime_python(runtime_dir)
@@ -161,9 +170,7 @@ def main() -> int:
         print(f"Runtime preparation failed: {exc}", file=sys.stderr)
         return exc.returncode if isinstance(exc, subprocess.CalledProcessError) else 2
 
-    environment = os.environ.copy()
-    environment.pop("PYTHONPATH", None)
-    environment["PYTHONNOUSERSITE"] = "1"
+    environment = _runtime_environment()
     command = [str(python), str(ROOT / "scripts" / "quickstart.py"), *quickstart_args]
     return subprocess.run(command, cwd=ROOT, env=environment, check=False).returncode
 

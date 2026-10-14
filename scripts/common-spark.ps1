@@ -43,9 +43,16 @@ function Find-PythonCommand {
         if (Get-Command $candidate -ErrorAction SilentlyContinue) {
             $arguments = @()
             if ($candidate -eq "py") { $arguments = @("-3") }
-            & $candidate @arguments -c `
-                "import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)" *> $null
-            if ($LASTEXITCODE -eq 0) {
+            $previousPreference = $ErrorActionPreference
+            try {
+                $ErrorActionPreference = "Continue"
+                & $candidate @arguments -c `
+                    "import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)" *> $null
+                $valid = $LASTEXITCODE -eq 0
+            }
+            catch { $valid = $false }
+            finally { $ErrorActionPreference = $previousPreference }
+            if ($valid) {
                 return [PSCustomObject]@{ Executable = $candidate; Arguments = $arguments }
             }
         }
@@ -75,9 +82,8 @@ function ConvertTo-WslProjectPath {
 function Test-WslSparkTools {
     param([Parameter(Mandatory)][string]$RepoRoot)
 
-    return (
-        (Test-Path -LiteralPath (Join-Path $RepoRoot "build\tools\jdk17\bin\java") -PathType Leaf) -and
-        (Test-Path -LiteralPath (Join-Path $RepoRoot "build\tools\python-packages\pyspark") -PathType Container) -and
-        (Test-Path -LiteralPath (Join-Path $RepoRoot "build\tools\python-packages\py4j") -PathType Container)
-    )
+    $wslRepoRoot = ConvertTo-WslProjectPath -WindowsPath $RepoRoot
+    $distro = Get-WslDistroName
+    & wsl.exe -d $distro -- bash "$wslRepoRoot/scripts/wsl/check-tools.sh" *> $null
+    return $LASTEXITCODE -eq 0
 }

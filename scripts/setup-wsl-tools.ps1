@@ -12,17 +12,6 @@ $pythonExecutable = $pythonCommand.Executable
 $pythonArguments = $pythonCommand.Arguments
 
 New-Item -ItemType Directory -Force -Path $toolsRoot | Out-Null
-$locationsJson = & $pythonExecutable @pythonArguments -c @'
-import json
-from pathlib import Path
-import py4j
-import pyspark
-print(json.dumps({"pyspark": str(Path(pyspark.__file__).parent), "py4j": str(Path(py4j.__file__).parent)}))
-'@
-if ($LASTEXITCODE -ne 0) {
-    throw "PySpark is not installed in Windows Python. Run: python -m pip install -e ."
-}
-$locations = $locationsJson | ConvertFrom-Json
 if (Test-Path -LiteralPath $packageRoot) {
     $resolvedTools = (Resolve-Path -LiteralPath $toolsRoot).Path
     $resolvedPackages = (Resolve-Path -LiteralPath $packageRoot).Path
@@ -32,8 +21,11 @@ if (Test-Path -LiteralPath $packageRoot) {
     Remove-Item -LiteralPath $resolvedPackages -Recurse -Force
 }
 New-Item -ItemType Directory -Force -Path $packageRoot | Out-Null
-Copy-Item -LiteralPath $locations.pyspark -Destination $packageRoot -Recurse
-Copy-Item -LiteralPath $locations.py4j -Destination $packageRoot -Recurse
+& $pythonExecutable @pythonArguments -m pip install `
+    --disable-pip-version-check `
+    --target $packageRoot `
+    "pyspark==4.2.0"
+if ($LASTEXITCODE -ne 0) { throw "Pinned PySpark staging failed." }
 
 if (-not (Test-Path -LiteralPath $archivePath -PathType Leaf)) {
     Write-Host "Downloading official Microsoft OpenJDK 17 for the project-local WSL runtime..."
@@ -46,4 +38,6 @@ $wslRepoRoot = ConvertTo-WslProjectPath -WindowsPath $repoRoot
 $distro = Get-WslDistroName
 & wsl.exe -d $distro -- bash "$wslRepoRoot/scripts/wsl/setup-jdk.sh"
 if ($LASTEXITCODE -ne 0) { throw "Project-local JDK extraction failed in WSL." }
-Write-Host "WSL Spark tools are ready under build/tools (Git ignored)."
+& wsl.exe -d $distro -- bash "$wslRepoRoot/scripts/wsl/setup-python-packages.sh"
+if ($LASTEXITCODE -ne 0) { throw "Managed PySpark package installation failed in WSL." }
+Write-Host "WSL Spark tools are ready under the WSL user cache."

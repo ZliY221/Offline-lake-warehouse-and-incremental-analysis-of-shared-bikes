@@ -3,8 +3,10 @@ set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd -- "$script_dir/../.." && pwd)"
-tools_root="$repo_root/build/tools"
-archive="$tools_root/microsoft-jdk17-linux-x64.tar.gz"
+cache_root="${XDG_CACHE_HOME:-$HOME/.cache}"
+managed_root="$cache_root/zliy221"
+tools_root="$managed_root/bike-trip-lakehouse"
+archive="$repo_root/build/tools/microsoft-jdk17-linux-x64.tar.gz"
 target="$tools_root/jdk17"
 staging="$tools_root/jdk17-staging"
 
@@ -17,7 +19,7 @@ if [[ ! -f "$archive" ]]; then
     exit 1
 fi
 case "$staging" in
-    "$tools_root"/*) ;;
+    "$managed_root"/*) ;;
     *) echo "Refusing to clean an unexpected staging path." >&2; exit 1 ;;
 esac
 rm -rf -- "$staging"

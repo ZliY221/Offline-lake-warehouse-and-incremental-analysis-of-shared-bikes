@@ -10,7 +10,7 @@
 | `pipeline` | Python、样例与任务定义、PySpark、JDK 17、输出目录 | Bronze/Silver/Gold、回填与质量报告 |
 | `airflow` | `pipeline` 加 Airflow 运行时 | Airflow 完整构建与日期回填 DAG |
 
-Windows 使用仓库提供的 WSL 执行路径：自检会确认 WSL、`build/tools/` 下的隔离 JDK/PySpark，以及 Airflow 模式所需的隔离虚拟环境。缺少隔离运行时时，报告会指向 `scripts/setup-wsl-tools.ps1` 或 `scripts/setup-airflow.ps1`。Linux 直接检查当前 Python 模块和 JDK。
+Windows 使用仓库提供的 WSL 执行路径：自检会确认 WSL、WSL 用户缓存中的受管 JDK/PySpark，以及 Airflow 模式所需的隔离虚拟环境。安装暂存文件位于 `build/tools/`，实际 Spark 运行时不依赖仓库路径。缺少运行时时，报告会指向 `scripts/setup-wsl-tools.ps1` 或 `scripts/setup-airflow.ps1`。Linux 直接检查当前 Python 模块和 JDK。
 
 ```shell
 python scripts/project_doctor.py --profile pipeline --json-output build/doctor/report.json --markdown-output build/doctor/report.md

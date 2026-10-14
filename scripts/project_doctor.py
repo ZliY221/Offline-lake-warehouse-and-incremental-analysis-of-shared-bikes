@@ -90,6 +90,19 @@ def managed_runtime_result(
     )
 
 
+def wsl_tools_result() -> dict[str, str]:
+    drive = ROOT.drive.rstrip(":").lower()
+    relative = ROOT.as_posix()[2:]
+    script = f"/mnt/{drive}{relative}/scripts/wsl/check-tools.sh"
+    distro = os.environ.get("BIKE_LAKEHOUSE_WSL_DISTRO", "Ubuntu")
+    return command_result(
+        "runtime.wsl-tools",
+        "Managed WSL Spark runtime",
+        "wsl.exe",
+        ["-d", distro, "--", "bash", script],
+    )
+
+
 def writable_result() -> dict[str, str]:
     build = ROOT / "build"
     try:
@@ -125,7 +138,6 @@ def evaluate(profile: str) -> dict[str, Any]:
         )
     checks.append(writable_result())
     if profile != "source":
-        checks.append(module_result("pyspark"))
         if platform.system() == "Windows":
             wsl_check = command_result(
                 "runtime.wsl", "Windows Subsystem for Linux", "wsl.exe", ["--status"]
@@ -133,23 +145,12 @@ def evaluate(profile: str) -> dict[str, Any]:
             if wsl_check["status"] == "PASS":
                 wsl_check["detail"] = "available"
             checks.append(wsl_check)
-            checks.append(
-                managed_runtime_result(
-                    "runtime.java",
-                    "Project-local JDK 17",
-                    "build/tools/jdk17/bin/java",
-                    "scripts/setup-wsl-tools.ps1",
-                )
-            )
-            checks.append(
-                managed_runtime_result(
-                    "runtime.pyspark",
-                    "Project-local PySpark",
-                    "build/tools/python-packages/pyspark",
-                    "scripts/setup-wsl-tools.ps1",
-                )
-            )
+            tools_check = wsl_tools_result()
+            if tools_check["status"] == "PASS":
+                tools_check["detail"] = "available in the WSL user cache"
+            checks.append(tools_check)
         else:
+            checks.append(module_result("pyspark"))
             checks.append(command_result("runtime.java", "Java runtime", "java", ["-version"], 17))
     if profile == "airflow":
         if platform.system() == "Windows":
