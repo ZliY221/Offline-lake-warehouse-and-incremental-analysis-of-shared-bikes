@@ -38,6 +38,16 @@ class OperationsHistoryTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "run and summary"):
             build_operations_history([{"status": "READY"}])
 
+    def test_rejects_invalid_snapshot_counts_and_boolean_flags(self) -> None:
+        invalid_count = self.snapshot("run-1", True)
+        invalid_count["summary"]["partition_count"] = -1
+        with self.assertRaisesRegex(ValueError, "partition_count must be non-negative"):
+            build_operations_history([invalid_count])
+        invalid_flag = self.snapshot("run-2", True)
+        invalid_flag["release_ready"] = "false"
+        with self.assertRaisesRegex(ValueError, "release_ready must be a boolean"):
+            build_operations_history([invalid_flag])
+
     def test_empty_history_has_zero_summary_and_readable_html(self) -> None:
         history = build_operations_history([])
         self.assertEqual(0, history["summary"]["run_count"])

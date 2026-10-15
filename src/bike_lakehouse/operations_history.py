@@ -17,6 +17,16 @@ def build_operations_history(
         raise ValueError("recent_window must be between 1 and 50")
     if not 0.0 <= readiness_threshold <= 1.0:
         raise ValueError("readiness_threshold must be between 0 and 1")
+
+    def non_negative_count(summary: dict[str, Any], field: str) -> int:
+        try:
+            value = int(summary.get(field, 0))
+        except (TypeError, ValueError) as error:
+            raise ValueError(f"{field} must be an integer") from error
+        if value < 0:
+            raise ValueError(f"{field} must be non-negative")
+        return value
+
     rows: list[dict[str, Any]] = []
     for snapshot in snapshots:
         if not isinstance(snapshot, dict):
@@ -25,16 +35,19 @@ def build_operations_history(
         summary = snapshot.get("summary")
         if not isinstance(run, dict) or not isinstance(summary, dict):
             raise ValueError("snapshot run and summary must be JSON objects")
+        release_ready = snapshot.get("release_ready", False)
+        if not isinstance(release_ready, bool):
+            raise ValueError("release_ready must be a boolean")
         rows.append({
             "generated_at_utc": str(snapshot.get("generated_at_utc", "")),
             "run_id": str(run.get("run_id") or "未命名"),
             "status": str(snapshot.get("status", "UNKNOWN")),
-            "release_ready": bool(snapshot.get("release_ready", False)),
+            "release_ready": release_ready,
             "pipeline_status": str(run.get("pipeline_status", "UNKNOWN")),
             "quality_status": str(run.get("quality_status", "UNKNOWN")),
-            "failed_quality_check_count": int(summary.get("failed_quality_check_count", 0)),
-            "remediation_action_count": int(summary.get("remediation_action_count", 0)),
-            "partition_count": int(summary.get("partition_count", 0)),
+            "failed_quality_check_count": non_negative_count(summary, "failed_quality_check_count"),
+            "remediation_action_count": non_negative_count(summary, "remediation_action_count"),
+            "partition_count": non_negative_count(summary, "partition_count"),
         })
     rows.sort(key=lambda row: (row["generated_at_utc"], row["run_id"]))
     ready_count = sum(row["release_ready"] for row in rows)
