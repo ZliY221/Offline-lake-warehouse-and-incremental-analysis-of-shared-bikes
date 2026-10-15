@@ -23,6 +23,7 @@ class OperationsHistoryTest(unittest.TestCase):
         self.assertEqual("ATTENTION_REQUIRED", history["summary"]["latest_status"])
         self.assertEqual(1, history["summary"]["current_status_streak"])
         self.assertEqual(0.5, history["summary"]["recent_readiness_rate"])
+        self.assertEqual("AT_RISK", history["summary"]["trend_status"])
         self.assertEqual(["run-1", "run-2"], [row["run_id"] for row in history["runs"]])
 
     def test_rejects_incomplete_snapshot(self) -> None:
@@ -35,6 +36,7 @@ class OperationsHistoryTest(unittest.TestCase):
         self.assertEqual(0.0, history["summary"]["readiness_rate"])
         self.assertIsNone(history["summary"]["latest_release_ready"])
         self.assertEqual("NO_RUNS", history["summary"]["latest_status"])
+        self.assertEqual("NO_DATA", history["summary"]["trend_status"])
         self.assertIn("暂无运行快照", render_operations_history_html(history))
 
     def test_history_html_escapes_run_identity(self) -> None:
@@ -42,6 +44,17 @@ class OperationsHistoryTest(unittest.TestCase):
         html = render_operations_history_html(history)
         self.assertNotIn("<script>", html)
         self.assertIn("&lt;script&gt;", html)
+
+    def test_recent_window_and_threshold_are_configurable(self) -> None:
+        history = build_operations_history(
+            [self.snapshot("run-1", False), self.snapshot("run-2", True)],
+            recent_window=1,
+            readiness_threshold=1.0,
+        )
+        self.assertEqual(1, history["summary"]["recent_run_count"])
+        self.assertEqual("HEALTHY", history["summary"]["trend_status"])
+        with self.assertRaisesRegex(ValueError, "recent_window"):
+            build_operations_history([], recent_window=0)
 
     def test_writes_json_and_standalone_html(self) -> None:
         history = build_operations_history([self.snapshot("run-1", True)])
