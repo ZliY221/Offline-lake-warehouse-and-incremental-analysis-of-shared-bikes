@@ -24,6 +24,9 @@ class OperationsHistoryTest(unittest.TestCase):
         self.assertEqual(1, history["summary"]["current_status_streak"])
         self.assertEqual(0.5, history["summary"]["recent_readiness_rate"])
         self.assertEqual("AT_RISK", history["summary"]["trend_status"])
+        self.assertEqual(2, history["summary"]["latest_failed_quality_check_delta"])
+        self.assertEqual(2, history["summary"]["latest_remediation_action_delta"])
+        self.assertEqual(0, history["summary"]["latest_partition_count_delta"])
         self.assertEqual(["run-1", "run-2"], [row["run_id"] for row in history["runs"]])
 
     def test_rejects_incomplete_snapshot(self) -> None:
@@ -37,6 +40,7 @@ class OperationsHistoryTest(unittest.TestCase):
         self.assertIsNone(history["summary"]["latest_release_ready"])
         self.assertEqual("NO_RUNS", history["summary"]["latest_status"])
         self.assertEqual("NO_DATA", history["summary"]["trend_status"])
+        self.assertIsNone(history["summary"]["latest_failed_quality_check_delta"])
         self.assertIn("暂无运行快照", render_operations_history_html(history))
 
     def test_history_html_escapes_run_identity(self) -> None:
@@ -44,6 +48,7 @@ class OperationsHistoryTest(unittest.TestCase):
         html = render_operations_history_html(history)
         self.assertNotIn("<script>", html)
         self.assertIn("&lt;script&gt;", html)
+        self.assertIn("暂无上一批次", html)
 
     def test_recent_window_and_threshold_are_configurable(self) -> None:
         history = build_operations_history(
