@@ -1,6 +1,6 @@
 # 用户使用指南
 
-适用版本：`v1.1.1`
+适用版本：`v1.2.0`
 
 本指南随项目版本同步更新，覆盖当前版本的启动、增量处理、质量治理和恢复操作。首次使用建议先阅读仓库首页的项目简介、数据架构和常用入口，再按本指南选择运行模式。
 
@@ -77,7 +77,7 @@ build-lakehouse-operations --quality-report build/reports/data-quality.json --or
 build-lakehouse-history build/operations/run-*/snapshot.json --output-json build/history/history.json --output-html build/history/index.html
 ```
 
-历史页面按批次展示发布状态、流水线状态、质量状态、失败检查和待处置动作，并计算整体发布就绪率。它只读取快照文件，适合在离线环境中归档或交付。
+历史页面按批次展示发布状态、流水线状态、质量状态、失败检查和待处置动作，并同时计算整体就绪率、最近五次就绪率及当前状态连续批次数。它只读取快照文件，适合在离线环境中归档或交付；最近就绪率持续低于总体水平时，应优先检查最新批次的质量失败与处置动作。
 
 ## 5. 小文件压实
 

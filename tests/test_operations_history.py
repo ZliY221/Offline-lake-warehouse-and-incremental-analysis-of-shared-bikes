@@ -19,6 +19,10 @@ class OperationsHistoryTest(unittest.TestCase):
         history = build_operations_history([self.snapshot("run-2", False, 2), self.snapshot("run-1", True)])
         self.assertEqual(2, history["summary"]["run_count"])
         self.assertEqual(0.5, history["summary"]["readiness_rate"])
+        self.assertEqual(False, history["summary"]["latest_release_ready"])
+        self.assertEqual("ATTENTION_REQUIRED", history["summary"]["latest_status"])
+        self.assertEqual(1, history["summary"]["current_status_streak"])
+        self.assertEqual(0.5, history["summary"]["recent_readiness_rate"])
         self.assertEqual(["run-1", "run-2"], [row["run_id"] for row in history["runs"]])
 
     def test_rejects_incomplete_snapshot(self) -> None:
@@ -29,6 +33,8 @@ class OperationsHistoryTest(unittest.TestCase):
         history = build_operations_history([])
         self.assertEqual(0, history["summary"]["run_count"])
         self.assertEqual(0.0, history["summary"]["readiness_rate"])
+        self.assertIsNone(history["summary"]["latest_release_ready"])
+        self.assertEqual("NO_RUNS", history["summary"]["latest_status"])
         self.assertIn("暂无运行快照", render_operations_history_html(history))
 
     def test_history_html_escapes_run_identity(self) -> None:
