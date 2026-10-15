@@ -28,6 +28,8 @@ def main() -> int:
         "run_count": history["summary"]["run_count"],
         "trend_status": history["summary"]["trend_status"],
         "latest_change_status": history["summary"]["latest_change_status"],
+        "longest_ready_streak": history["summary"]["longest_ready_streak"],
+        "longest_attention_streak": history["summary"]["longest_attention_streak"],
         "latest_failed_quality_check_delta": history["summary"]["latest_failed_quality_check_delta"],
         "output_html": str(args.output_html),
     }, ensure_ascii=False, sort_keys=True))

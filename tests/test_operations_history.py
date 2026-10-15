@@ -22,6 +22,8 @@ class OperationsHistoryTest(unittest.TestCase):
         self.assertEqual(False, history["summary"]["latest_release_ready"])
         self.assertEqual("ATTENTION_REQUIRED", history["summary"]["latest_status"])
         self.assertEqual(1, history["summary"]["current_status_streak"])
+        self.assertEqual(1, history["summary"]["longest_ready_streak"])
+        self.assertEqual(1, history["summary"]["longest_attention_streak"])
         self.assertEqual(0.5, history["summary"]["recent_readiness_rate"])
         self.assertEqual("AT_RISK", history["summary"]["trend_status"])
         self.assertEqual(2, history["summary"]["latest_failed_quality_check_delta"])
@@ -55,6 +57,8 @@ class OperationsHistoryTest(unittest.TestCase):
         self.assertIsNone(history["summary"]["latest_release_ready"])
         self.assertEqual("NO_RUNS", history["summary"]["latest_status"])
         self.assertEqual("NO_DATA", history["summary"]["trend_status"])
+        self.assertEqual(0, history["summary"]["longest_ready_streak"])
+        self.assertEqual(0, history["summary"]["longest_attention_streak"])
         self.assertIsNone(history["summary"]["latest_failed_quality_check_delta"])
         self.assertEqual("NO_BASELINE", history["summary"]["latest_change_status"])
         self.assertIn("暂无运行快照", render_operations_history_html(history))
@@ -77,6 +81,20 @@ class OperationsHistoryTest(unittest.TestCase):
         self.assertEqual("IMPROVED", history["summary"]["latest_change_status"])
         with self.assertRaisesRegex(ValueError, "recent_window"):
             build_operations_history([], recent_window=0)
+
+    def test_tracks_longest_ready_and_attention_streaks(self) -> None:
+        history = build_operations_history([
+            self.snapshot("run-1", True),
+            self.snapshot("run-2", True),
+            self.snapshot("run-3", False),
+            self.snapshot("run-4", False),
+            self.snapshot("run-5", False),
+            self.snapshot("run-6", True),
+        ])
+        self.assertEqual(2, history["summary"]["longest_ready_streak"])
+        self.assertEqual(3, history["summary"]["longest_attention_streak"])
+        self.assertEqual(1, history["summary"]["current_status_streak"])
+        self.assertIn("最长连续就绪", render_operations_history_html(history))
 
     def test_writes_json_and_standalone_html(self) -> None:
         history = build_operations_history([self.snapshot("run-1", True)])
