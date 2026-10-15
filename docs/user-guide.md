@@ -1,6 +1,6 @@
 # 用户使用指南
 
-适用版本：`v0.13.4`
+适用版本：`v1.0.0`
 
 本指南随项目版本同步更新，覆盖当前版本的启动、增量处理、质量治理和恢复操作。首次使用建议先阅读仓库首页的项目简介、数据架构和常用入口，再按本指南选择运行模式。
 
@@ -54,6 +54,22 @@ python -m bike_lakehouse.quality_compare_cli --baseline build/quality/baseline.j
 ```
 
 对比结果列出每项检查的原状态、当前状态和变化类型；候选报告将原本正常的检查变为失败或缺失时，`--fail-on-regression` 返回状态码 `1`。恢复项单独记录，不会触发回退门禁。
+
+将质量报告转换为按优先级排列的修复建议：
+
+```powershell
+build-quality-actions --report build/reports/data-quality.json --output build/reports/quality-actions.json
+```
+
+输出会保留失败检查的证据字段，并给出 `P0` 至 `P2` 的处置顺序。发布流程可附加 `--require-ready`；仍有待处理动作时命令返回状态码 `2`。
+
+生成可离线打开的运行控制中心：
+
+```powershell
+build-lakehouse-operations --quality-report build/reports/data-quality.json --orchestration-state build/control/orchestration-run.json --output-json build/operations/snapshot.json --output-html build/operations/index.html
+```
+
+控制中心将任务状态、依赖、尝试次数、质量检查、分层数据规模和修复队列汇总到一个 JSON 快照与独立 HTML 页面。无需启动服务即可查看；加入 `--require-ready` 后可直接作为离线发布门禁。
 
 ## 5. 小文件压实
 

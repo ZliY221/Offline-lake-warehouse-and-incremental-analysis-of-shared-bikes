@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/ci.yml/badge.svg)](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/ci.yml)
 [![Portable smoke](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/portable-smoke.yml/badge.svg)](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/portable-smoke.yml)
-![Version](https://img.shields.io/badge/version-v0.13.4-0f766e)
+![Version](https://img.shields.io/badge/version-v1.0.0-0f766e)
 ![PySpark](https://img.shields.io/badge/PySpark-4.2-e25a1c)
 ![Storage](https://img.shields.io/badge/storage-Parquet-2563eb)
 
@@ -24,6 +24,7 @@
 | 增量处理 | 日期分区覆盖、批次清单、跨分区主键保护 |
 | 维度建模 | 站点 SCD2、行程事实与时态关联 |
 | 数据治理 | 拒绝分流、跨层对账、回填审计、小文件压实 |
+| 问题处置 | 质量异常自动生成分级修复建议与发布就绪状态 |
 | 调度运维 | 本地任务图、重试恢复、Airflow TaskFlow DAG |
 
 ## 快速启动
@@ -106,6 +107,8 @@ tests/                  Python 与 Spark 验证
 | 日期回填 | `./scripts/backfill-date.ps1 -IngestionDate 2026-10-01` |
 | 小文件治理 | `./scripts/compact-lakehouse.ps1` |
 | 压实状态 | `inspect-compaction-journal build/compaction/journal.json --pretty` |
+| 质量处置计划 | `build-quality-actions --report build/reports/data-quality.json --output build/reports/quality-actions.json` |
+| 离线运行控制中心 | `build-lakehouse-operations --quality-report build/reports/data-quality.json --orchestration-state build/control/orchestration-run.json --output-json build/operations/snapshot.json --output-html build/operations/index.html` |
 | 工程验收 | `./scripts/run-project-acceptance.ps1` |
 
 ## 项目文档
@@ -128,4 +131,4 @@ tests/                  Python 与 Spark 验证
 
 ## 版本与维护
 
-当前版本为 `v0.13.4`。每次发布同步维护[用户使用指南](docs/user-guide.md)、[版本记录](CHANGELOG.md)和[版本摘要](VERSION_LOG.md)。
+当前版本为 `v1.0.0`。每次发布同步维护[用户使用指南](docs/user-guide.md)、[版本记录](CHANGELOG.md)和[版本摘要](VERSION_LOG.md)。
