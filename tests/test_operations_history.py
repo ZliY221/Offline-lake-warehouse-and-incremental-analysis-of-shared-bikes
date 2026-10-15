@@ -27,6 +27,11 @@ class OperationsHistoryTest(unittest.TestCase):
         self.assertEqual(2, history["summary"]["latest_failed_quality_check_delta"])
         self.assertEqual(2, history["summary"]["latest_remediation_action_delta"])
         self.assertEqual(0, history["summary"]["latest_partition_count_delta"])
+        self.assertEqual("REGRESSED", history["summary"]["latest_change_status"])
+        self.assertEqual(
+            ["RELEASE_READINESS_LOST", "FAILED_CHECKS_INCREASED", "REMEDIATION_ACTIONS_INCREASED"],
+            history["summary"]["latest_regression_reasons"],
+        )
         self.assertEqual(["run-1", "run-2"], [row["run_id"] for row in history["runs"]])
 
     def test_rejects_incomplete_snapshot(self) -> None:
@@ -41,6 +46,7 @@ class OperationsHistoryTest(unittest.TestCase):
         self.assertEqual("NO_RUNS", history["summary"]["latest_status"])
         self.assertEqual("NO_DATA", history["summary"]["trend_status"])
         self.assertIsNone(history["summary"]["latest_failed_quality_check_delta"])
+        self.assertEqual("NO_BASELINE", history["summary"]["latest_change_status"])
         self.assertIn("暂无运行快照", render_operations_history_html(history))
 
     def test_history_html_escapes_run_identity(self) -> None:
@@ -58,6 +64,7 @@ class OperationsHistoryTest(unittest.TestCase):
         )
         self.assertEqual(1, history["summary"]["recent_run_count"])
         self.assertEqual("HEALTHY", history["summary"]["trend_status"])
+        self.assertEqual("IMPROVED", history["summary"]["latest_change_status"])
         with self.assertRaisesRegex(ValueError, "recent_window"):
             build_operations_history([], recent_window=0)
 
