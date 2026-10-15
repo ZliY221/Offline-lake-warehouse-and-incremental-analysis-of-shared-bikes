@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/ci.yml/badge.svg)](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/ci.yml)
 [![Portable smoke](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/portable-smoke.yml/badge.svg)](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/portable-smoke.yml)
-![Version](https://img.shields.io/badge/version-v1.0.0-0f766e)
+![Version](https://img.shields.io/badge/version-v1.1.0-0f766e)
 ![PySpark](https://img.shields.io/badge/PySpark-4.2-e25a1c)
 ![Storage](https://img.shields.io/badge/storage-Parquet-2563eb)
 
@@ -85,6 +85,7 @@ flowchart LR
 - 本地编排器与 Airflow DAG 复用同一任务定义。
 - 保存 Job、Stage 和 Task 级 Shuffle、耗时、GC 与 Spill 指标。
 - 保留物理计划、运行清单和审计报告，便于复核执行过程。
+- 聚合多次运行控制快照，统计发布就绪率、质量失败与修复积压趋势。
 
 ## 工程结构
 
@@ -109,6 +110,7 @@ tests/                  Python 与 Spark 验证
 | 压实状态 | `inspect-compaction-journal build/compaction/journal.json --pretty` |
 | 质量处置计划 | `build-quality-actions --report build/reports/data-quality.json --output build/reports/quality-actions.json` |
 | 离线运行控制中心 | `build-lakehouse-operations --quality-report build/reports/data-quality.json --orchestration-state build/control/orchestration-run.json --output-json build/operations/snapshot.json --output-html build/operations/index.html` |
+| 多批次运行历史 | `build-lakehouse-history build/operations/run-*/snapshot.json --output-json build/history/history.json --output-html build/history/index.html` |
 | 工程验收 | `./scripts/run-project-acceptance.ps1` |
 
 ## 项目文档
@@ -131,4 +133,4 @@ tests/                  Python 与 Spark 验证
 
 ## 版本与维护
 
-当前版本为 `v1.0.0`。每次发布同步维护[用户使用指南](docs/user-guide.md)、[版本记录](CHANGELOG.md)和[版本摘要](VERSION_LOG.md)。
+当前版本为 `v1.1.0`。每次发布同步维护[用户使用指南](docs/user-guide.md)、[版本记录](CHANGELOG.md)和[版本摘要](VERSION_LOG.md)。
