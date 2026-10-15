@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from bike_lakehouse.operations_history import build_operations_history, write_operations_history
+from bike_lakehouse.operations_history import build_operations_history, render_operations_history_html, write_operations_history
 
 
 class OperationsHistoryTest(unittest.TestCase):
@@ -24,6 +24,18 @@ class OperationsHistoryTest(unittest.TestCase):
     def test_rejects_incomplete_snapshot(self) -> None:
         with self.assertRaisesRegex(ValueError, "run and summary"):
             build_operations_history([{"status": "READY"}])
+
+    def test_empty_history_has_zero_summary_and_readable_html(self) -> None:
+        history = build_operations_history([])
+        self.assertEqual(0, history["summary"]["run_count"])
+        self.assertEqual(0.0, history["summary"]["readiness_rate"])
+        self.assertIn("暂无运行快照", render_operations_history_html(history))
+
+    def test_history_html_escapes_run_identity(self) -> None:
+        history = build_operations_history([self.snapshot("<script>alert(1)</script>", True)])
+        html = render_operations_history_html(history)
+        self.assertNotIn("<script>", html)
+        self.assertIn("&lt;script&gt;", html)
 
     def test_writes_json_and_standalone_html(self) -> None:
         history = build_operations_history([self.snapshot("run-1", True)])

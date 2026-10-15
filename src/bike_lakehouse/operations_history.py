@@ -5,6 +5,7 @@ from __future__ import annotations
 from html import escape
 from pathlib import Path
 from typing import Any, Iterable
+from uuid import uuid4
 
 from .batch_manifest import utc_timestamp, write_json_atomic
 
@@ -66,4 +67,9 @@ def write_operations_history(history: dict[str, Any], json_path: Path, html_path
     write_json_atomic(Path(json_path).resolve(), history)
     target = Path(html_path).resolve()
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(render_operations_history_html(history), encoding="utf-8")
+    temporary = target.with_name(f".{target.name}.{uuid4().hex}.tmp")
+    try:
+        temporary.write_text(render_operations_history_html(history), encoding="utf-8")
+        temporary.replace(target)
+    finally:
+        temporary.unlink(missing_ok=True)
