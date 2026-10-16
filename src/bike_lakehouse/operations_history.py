@@ -137,9 +137,17 @@ def build_operations_history(
         recommended_action = "MONITOR_RECENT_RUNS"
     else:
         recommended_action = "CONTINUE_RELEASE"
+    action_priority = {
+        "INVESTIGATE_QUALITY_DEBT": "P0",
+        "CLEAR_RELEASE_BLOCKERS": "P1",
+        "CLEAR_REMAINING_ACTIONS": "P2",
+        "MONITOR_RECENT_RUNS": "P2",
+        "CONTINUE_RELEASE": "P3",
+        "NO_DATA": "NONE",
+    }[recommended_action]
 
     return {
-        "history_version": "1.7",
+        "history_version": "1.8",
         "generated_at_utc": utc_timestamp(),
         "summary": {
             "run_count": len(rows),
@@ -167,6 +175,7 @@ def build_operations_history(
             "has_previous_run": previous is not None,
             "latest_change_status": latest_change_status,
             "recommended_action": recommended_action,
+            "recommended_action_priority": action_priority,
             "latest_regression_reasons": regression_reasons,
             "latest_failed_quality_check_delta": failed_delta,
             "latest_remediation_action_delta": remediation_delta,
@@ -196,7 +205,7 @@ def render_operations_history_html(history: dict[str, Any]) -> str:
         f"<article><span>质量债务环比</span><strong>{format_delta(summary['latest_quality_debt_delta'])}</strong></article>"
         f"<article><span>当前 / 近期平均 / 峰值</span><strong>{summary['latest_quality_debt_score']} / {summary['recent_average_quality_debt_score']:.1f} / {summary['peak_quality_debt_score']}</strong></article>"
         f"<article><span>近期高债务批次</span><strong>{summary['recent_high_debt_count']} 次</strong><small>历史高债务 {summary['quality_debt_bands']['HIGH']} 次</small></article>"
-        f"<article><span>建议动作</span><strong>{escape(summary['recommended_action'])}</strong></article></div>"
+        f"<article><span>建议动作 · {escape(summary['recommended_action_priority'])}</span><strong>{escape(summary['recommended_action'])}</strong></article></div>"
     )
     rows = "".join(
         "<tr>"

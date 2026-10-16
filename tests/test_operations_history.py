@@ -32,6 +32,7 @@ class OperationsHistoryTest(unittest.TestCase):
         self.assertEqual({"CLEAN": 1, "MANAGEABLE": 0, "HIGH": 1}, history["summary"]["quality_debt_bands"])
         self.assertEqual(1, history["summary"]["recent_high_debt_count"])
         self.assertEqual("INVESTIGATE_QUALITY_DEBT", history["summary"]["recommended_action"])
+        self.assertEqual("P0", history["summary"]["recommended_action_priority"])
         self.assertEqual(0.5, history["summary"]["recent_readiness_rate"])
         self.assertEqual("AT_RISK", history["summary"]["trend_status"])
         self.assertEqual(2, history["summary"]["latest_failed_quality_check_delta"])
@@ -73,6 +74,7 @@ class OperationsHistoryTest(unittest.TestCase):
         self.assertIsNone(history["summary"]["latest_quality_debt_delta"])
         self.assertEqual({"CLEAN": 0, "MANAGEABLE": 0, "HIGH": 0}, history["summary"]["quality_debt_bands"])
         self.assertEqual("NO_DATA", history["summary"]["recommended_action"])
+        self.assertEqual("NONE", history["summary"]["recommended_action_priority"])
         self.assertIsNone(history["summary"]["latest_failed_quality_check_delta"])
         self.assertEqual("NO_BASELINE", history["summary"]["latest_change_status"])
         self.assertIn("暂无运行快照", render_operations_history_html(history))
@@ -94,6 +96,7 @@ class OperationsHistoryTest(unittest.TestCase):
         self.assertEqual("HEALTHY", history["summary"]["trend_status"])
         self.assertEqual("IMPROVED", history["summary"]["latest_change_status"])
         self.assertEqual("CONTINUE_RELEASE", history["summary"]["recommended_action"])
+        self.assertEqual("P3", history["summary"]["recommended_action_priority"])
         with self.assertRaisesRegex(ValueError, "recent_window"):
             build_operations_history([], recent_window=0)
 
@@ -118,6 +121,7 @@ class OperationsHistoryTest(unittest.TestCase):
         ], recent_window=2, readiness_threshold=0.8)
         self.assertEqual("AT_RISK", history["summary"]["trend_status"])
         self.assertEqual("MONITOR_RECENT_RUNS", history["summary"]["recommended_action"])
+        self.assertEqual("P2", history["summary"]["recommended_action_priority"])
 
     def test_writes_json_and_standalone_html(self) -> None:
         history = build_operations_history([self.snapshot("run-1", True)])
