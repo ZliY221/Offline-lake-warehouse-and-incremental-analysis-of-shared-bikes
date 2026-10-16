@@ -81,6 +81,11 @@ def build_operations_history(
         round(sum(row["quality_debt_score"] for row in recent_rows) / len(recent_rows), 2)
         if recent_rows else 0.0
     )
+    quality_debt_bands = {
+        "CLEAN": sum(row["quality_debt_score"] == 0 for row in rows),
+        "MANAGEABLE": sum(0 < row["quality_debt_score"] < 5 for row in rows),
+        "HIGH": sum(row["quality_debt_score"] >= 5 for row in rows),
+    }
     trend_status = "NO_DATA" if not recent_rows else (
         "HEALTHY" if recent_readiness_rate >= readiness_threshold else "AT_RISK"
     )
@@ -120,7 +125,7 @@ def build_operations_history(
         latest_change_status = "STABLE"
 
     return {
-        "history_version": "1.5",
+        "history_version": "1.6",
         "generated_at_utc": utc_timestamp(),
         "summary": {
             "run_count": len(rows),
@@ -138,6 +143,10 @@ def build_operations_history(
             "recent_average_quality_debt_score": recent_average_quality_debt,
             "peak_quality_debt_score": max(
                 (row["quality_debt_score"] for row in rows), default=0
+            ),
+            "quality_debt_bands": quality_debt_bands,
+            "recent_high_debt_count": sum(
+                row["quality_debt_score"] >= 5 for row in recent_rows
             ),
             "readiness_threshold": readiness_threshold,
             "trend_status": trend_status,
@@ -170,7 +179,8 @@ def render_operations_history_html(history: dict[str, Any]) -> str:
         f"<article><span>处置动作环比</span><strong>{format_delta(summary['latest_remediation_action_delta'])}</strong></article>"
         f"<article><span>分区数量环比</span><strong>{format_delta(summary['latest_partition_count_delta'])}</strong></article>"
         f"<article><span>质量债务环比</span><strong>{format_delta(summary['latest_quality_debt_delta'])}</strong></article>"
-        f"<article><span>当前 / 近期平均 / 峰值</span><strong>{summary['latest_quality_debt_score']} / {summary['recent_average_quality_debt_score']:.1f} / {summary['peak_quality_debt_score']}</strong></article></div>"
+        f"<article><span>当前 / 近期平均 / 峰值</span><strong>{summary['latest_quality_debt_score']} / {summary['recent_average_quality_debt_score']:.1f} / {summary['peak_quality_debt_score']}</strong></article>"
+        f"<article><span>近期高债务批次</span><strong>{summary['recent_high_debt_count']} 次</strong><small>历史高债务 {summary['quality_debt_bands']['HIGH']} 次</small></article></div>"
     )
     rows = "".join(
         "<tr>"
