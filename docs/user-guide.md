@@ -1,6 +1,6 @@
 # 用户使用指南
 
-适用版本：`v1.6.0`
+适用版本：`v1.7.0`
 
 本指南随项目版本同步更新，覆盖当前版本的启动、增量处理、质量治理和恢复操作。首次使用建议先阅读仓库首页的项目简介、数据架构和常用入口，再按本指南选择运行模式。
 
@@ -76,6 +76,8 @@ build-lakehouse-operations --quality-report build/reports/data-quality.json --or
 ```shell
 build-lakehouse-history build/operations/run-*/snapshot.json --recent-window 5 --readiness-threshold 0.8 --output-json build/history/history.json --output-html build/history/index.html
 ```
+
+历史摘要会将“失败检查数 × 2 + 待处置动作数”计算为质量债务分。该指标用于快速比较修复压力，不替代明细检查；分数升高时应继续查看失败检查和处置动作来源。
 
 历史页面按批次展示发布状态、流水线状态、质量状态、失败检查和待处置动作，并同时计算整体就绪率、近期就绪率及当前状态连续批次数。稳定性卡片会统计历史最长连续就绪批次数和最长连续需关注批次数，用于区分偶发失败与持续性风险；没有运行记录时两项均为零。最新批次还会与上一批次比较失败检查、处置动作和分区数量；正数表示增加，负数表示减少，只有一个批次时显示“暂无上一批次”。系统结合发布就绪变化、失败检查和处置动作增减，给出 `REGRESSED`、`IMPROVED`、`MIXED`、`STABLE` 或 `NO_BASELINE` 判定，并列出标准化退化原因。输入快照中的就绪标识必须是布尔值，三类数量必须为非负整数，非法快照会在汇总前直接拒绝。`--recent-window` 可设置 1 至 50 次观察窗口，`--readiness-threshold` 可设置 0 至 1 的健康阈值；趋势状态会输出为 `HEALTHY`、`AT_RISK` 或 `NO_DATA`。它只读取快照文件，适合在离线环境中归档或交付。
 

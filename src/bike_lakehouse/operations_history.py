@@ -38,6 +38,8 @@ def build_operations_history(
         release_ready = snapshot.get("release_ready", False)
         if not isinstance(release_ready, bool):
             raise ValueError("release_ready must be a boolean")
+        failed_count = non_negative_count(summary, "failed_quality_check_count")
+        remediation_count = non_negative_count(summary, "remediation_action_count")
         rows.append({
             "generated_at_utc": str(snapshot.get("generated_at_utc", "")),
             "run_id": str(run.get("run_id") or "未命名"),
@@ -45,8 +47,9 @@ def build_operations_history(
             "release_ready": release_ready,
             "pipeline_status": str(run.get("pipeline_status", "UNKNOWN")),
             "quality_status": str(run.get("quality_status", "UNKNOWN")),
-            "failed_quality_check_count": non_negative_count(summary, "failed_quality_check_count"),
-            "remediation_action_count": non_negative_count(summary, "remediation_action_count"),
+            "failed_quality_check_count": failed_count,
+            "remediation_action_count": remediation_count,
+            "quality_debt_score": failed_count * 2 + remediation_count,
             "partition_count": non_negative_count(summary, "partition_count"),
         })
     rows.sort(key=lambda row: (row["generated_at_utc"], row["run_id"]))
@@ -113,7 +116,7 @@ def build_operations_history(
         latest_change_status = "STABLE"
 
     return {
-        "history_version": "1.3",
+        "history_version": "1.4",
         "generated_at_utc": utc_timestamp(),
         "summary": {
             "run_count": len(rows),
@@ -138,6 +141,7 @@ def build_operations_history(
             "latest_partition_count_delta": latest_delta("partition_count"),
             "failed_quality_check_count": sum(row["failed_quality_check_count"] for row in rows),
             "remediation_action_count": sum(row["remediation_action_count"] for row in rows),
+            "latest_quality_debt_score": rows[-1]["quality_debt_score"] if rows else 0,
         },
         "runs": rows,
     }
@@ -155,7 +159,8 @@ def render_operations_history_html(history: dict[str, Any]) -> str:
         f"<small>{escape('、'.join(summary['latest_regression_reasons']) or '无退化信号')}</small></article>"
         f"<article><span>失败检查环比</span><strong>{format_delta(summary['latest_failed_quality_check_delta'])}</strong></article>"
         f"<article><span>处置动作环比</span><strong>{format_delta(summary['latest_remediation_action_delta'])}</strong></article>"
-        f"<article><span>分区数量环比</span><strong>{format_delta(summary['latest_partition_count_delta'])}</strong></article></div>"
+        f"<article><span>分区数量环比</span><strong>{format_delta(summary['latest_partition_count_delta'])}</strong></article>"
+        f"<article><span>当前质量债务</span><strong>{summary['latest_quality_debt_score']} 分</strong></article></div>"
     )
     rows = "".join(
         "<tr>"
