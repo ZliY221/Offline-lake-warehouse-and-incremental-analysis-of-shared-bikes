@@ -77,6 +77,10 @@ def build_operations_history(
     recent_rows = rows[-recent_window:]
     recent_ready_count = sum(row["release_ready"] for row in recent_rows)
     recent_readiness_rate = round(recent_ready_count / len(recent_rows), 4) if recent_rows else 0.0
+    recent_average_quality_debt = (
+        round(sum(row["quality_debt_score"] for row in recent_rows) / len(recent_rows), 2)
+        if recent_rows else 0.0
+    )
     trend_status = "NO_DATA" if not recent_rows else (
         "HEALTHY" if recent_readiness_rate >= readiness_threshold else "AT_RISK"
     )
@@ -116,7 +120,7 @@ def build_operations_history(
         latest_change_status = "STABLE"
 
     return {
-        "history_version": "1.4",
+        "history_version": "1.5",
         "generated_at_utc": utc_timestamp(),
         "summary": {
             "run_count": len(rows),
@@ -131,6 +135,10 @@ def build_operations_history(
             "recent_run_count": len(recent_rows),
             "recent_window": recent_window,
             "recent_readiness_rate": recent_readiness_rate,
+            "recent_average_quality_debt_score": recent_average_quality_debt,
+            "peak_quality_debt_score": max(
+                (row["quality_debt_score"] for row in rows), default=0
+            ),
             "readiness_threshold": readiness_threshold,
             "trend_status": trend_status,
             "has_previous_run": previous is not None,
@@ -139,6 +147,7 @@ def build_operations_history(
             "latest_failed_quality_check_delta": failed_delta,
             "latest_remediation_action_delta": remediation_delta,
             "latest_partition_count_delta": latest_delta("partition_count"),
+            "latest_quality_debt_delta": latest_delta("quality_debt_score"),
             "failed_quality_check_count": sum(row["failed_quality_check_count"] for row in rows),
             "remediation_action_count": sum(row["remediation_action_count"] for row in rows),
             "latest_quality_debt_score": rows[-1]["quality_debt_score"] if rows else 0,
@@ -160,7 +169,8 @@ def render_operations_history_html(history: dict[str, Any]) -> str:
         f"<article><span>失败检查环比</span><strong>{format_delta(summary['latest_failed_quality_check_delta'])}</strong></article>"
         f"<article><span>处置动作环比</span><strong>{format_delta(summary['latest_remediation_action_delta'])}</strong></article>"
         f"<article><span>分区数量环比</span><strong>{format_delta(summary['latest_partition_count_delta'])}</strong></article>"
-        f"<article><span>当前质量债务</span><strong>{summary['latest_quality_debt_score']} 分</strong></article></div>"
+        f"<article><span>质量债务环比</span><strong>{format_delta(summary['latest_quality_debt_delta'])}</strong></article>"
+        f"<article><span>当前 / 近期平均 / 峰值</span><strong>{summary['latest_quality_debt_score']} / {summary['recent_average_quality_debt_score']:.1f} / {summary['peak_quality_debt_score']}</strong></article></div>"
     )
     rows = "".join(
         "<tr>"
