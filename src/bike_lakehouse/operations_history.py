@@ -124,8 +124,22 @@ def build_operations_history(
     elif previous is not None:
         latest_change_status = "STABLE"
 
+    latest_quality_debt = rows[-1]["quality_debt_score"] if rows else 0
+    if latest is None:
+        recommended_action = "NO_DATA"
+    elif latest_quality_debt >= 5:
+        recommended_action = "INVESTIGATE_QUALITY_DEBT"
+    elif not latest["release_ready"]:
+        recommended_action = "CLEAR_RELEASE_BLOCKERS"
+    elif latest_quality_debt > 0:
+        recommended_action = "CLEAR_REMAINING_ACTIONS"
+    elif trend_status == "AT_RISK":
+        recommended_action = "MONITOR_RECENT_RUNS"
+    else:
+        recommended_action = "CONTINUE_RELEASE"
+
     return {
-        "history_version": "1.6",
+        "history_version": "1.7",
         "generated_at_utc": utc_timestamp(),
         "summary": {
             "run_count": len(rows),
@@ -152,6 +166,7 @@ def build_operations_history(
             "trend_status": trend_status,
             "has_previous_run": previous is not None,
             "latest_change_status": latest_change_status,
+            "recommended_action": recommended_action,
             "latest_regression_reasons": regression_reasons,
             "latest_failed_quality_check_delta": failed_delta,
             "latest_remediation_action_delta": remediation_delta,
@@ -159,7 +174,7 @@ def build_operations_history(
             "latest_quality_debt_delta": latest_delta("quality_debt_score"),
             "failed_quality_check_count": sum(row["failed_quality_check_count"] for row in rows),
             "remediation_action_count": sum(row["remediation_action_count"] for row in rows),
-            "latest_quality_debt_score": rows[-1]["quality_debt_score"] if rows else 0,
+            "latest_quality_debt_score": latest_quality_debt,
         },
         "runs": rows,
     }
@@ -180,7 +195,8 @@ def render_operations_history_html(history: dict[str, Any]) -> str:
         f"<article><span>分区数量环比</span><strong>{format_delta(summary['latest_partition_count_delta'])}</strong></article>"
         f"<article><span>质量债务环比</span><strong>{format_delta(summary['latest_quality_debt_delta'])}</strong></article>"
         f"<article><span>当前 / 近期平均 / 峰值</span><strong>{summary['latest_quality_debt_score']} / {summary['recent_average_quality_debt_score']:.1f} / {summary['peak_quality_debt_score']}</strong></article>"
-        f"<article><span>近期高债务批次</span><strong>{summary['recent_high_debt_count']} 次</strong><small>历史高债务 {summary['quality_debt_bands']['HIGH']} 次</small></article></div>"
+        f"<article><span>近期高债务批次</span><strong>{summary['recent_high_debt_count']} 次</strong><small>历史高债务 {summary['quality_debt_bands']['HIGH']} 次</small></article>"
+        f"<article><span>建议动作</span><strong>{escape(summary['recommended_action'])}</strong></article></div>"
     )
     rows = "".join(
         "<tr>"
