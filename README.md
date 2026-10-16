@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/ci.yml/badge.svg)](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/ci.yml)
 [![Portable smoke](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/portable-smoke.yml/badge.svg)](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/portable-smoke.yml)
-![Version](https://img.shields.io/badge/version-v1.11.0-0f766e)
+![Version](https://img.shields.io/badge/version-v1.12.0-0f766e)
 ![PySpark](https://img.shields.io/badge/PySpark-4.2-e25a1c)
 ![Storage](https://img.shields.io/badge/storage-Parquet-2563eb)
 
@@ -91,6 +91,7 @@ flowchart LR
 - 将失败检查按两倍权重与待处置动作合成为质量债务分，快速量化最新批次修复压力。
 - 汇总近期平均、历史峰值和最新环比，识别质量债务的积累或回落。
 - 为建议动作标记 P0 至 P3 优先级，让离线值守人员先处理高债务和发布阻断问题。
+- 按优先级给出处置复核时限，并对 P0/P1 问题明确升级值守负责人的要求。
 - 按清洁、可控和高债务区间统计批次分布，并突出近期高债务批次数。
 - 根据发布状态、债务水平与近期趋势生成标准化下一步处置建议。
 
@@ -140,4 +141,4 @@ tests/                  Python 与 Spark 验证
 
 ## 版本与维护
 
-当前版本为 `v1.11.0`。每次发布同步维护[用户使用指南](docs/user-guide.md)、[版本记录](CHANGELOG.md)和[版本摘要](VERSION_LOG.md)。
+当前版本为 `v1.12.0`。每次发布同步维护[用户使用指南](docs/user-guide.md)、[版本记录](CHANGELOG.md)和[版本摘要](VERSION_LOG.md)。

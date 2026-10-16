@@ -145,9 +145,17 @@ def build_operations_history(
         "CONTINUE_RELEASE": "P3",
         "NO_DATA": "NONE",
     }[recommended_action]
+    review_window_hours = {
+        "P0": 1,
+        "P1": 4,
+        "P2": 24,
+        "P3": 72,
+        "NONE": None,
+    }[action_priority]
+    escalation_required = action_priority in {"P0", "P1"}
 
     return {
-        "history_version": "1.8",
+        "history_version": "1.9",
         "generated_at_utc": utc_timestamp(),
         "summary": {
             "run_count": len(rows),
@@ -176,6 +184,8 @@ def build_operations_history(
             "latest_change_status": latest_change_status,
             "recommended_action": recommended_action,
             "recommended_action_priority": action_priority,
+            "recommended_review_window_hours": review_window_hours,
+            "escalation_required": escalation_required,
             "latest_regression_reasons": regression_reasons,
             "latest_failed_quality_check_delta": failed_delta,
             "latest_remediation_action_delta": remediation_delta,
@@ -205,7 +215,8 @@ def render_operations_history_html(history: dict[str, Any]) -> str:
         f"<article><span>质量债务环比</span><strong>{format_delta(summary['latest_quality_debt_delta'])}</strong></article>"
         f"<article><span>当前 / 近期平均 / 峰值</span><strong>{summary['latest_quality_debt_score']} / {summary['recent_average_quality_debt_score']:.1f} / {summary['peak_quality_debt_score']}</strong></article>"
         f"<article><span>近期高债务批次</span><strong>{summary['recent_high_debt_count']} 次</strong><small>历史高债务 {summary['quality_debt_bands']['HIGH']} 次</small></article>"
-        f"<article><span>建议动作 · {escape(summary['recommended_action_priority'])}</span><strong>{escape(summary['recommended_action'])}</strong></article></div>"
+        f"<article><span>建议动作 · {escape(summary['recommended_action_priority'])}</span><strong>{escape(summary['recommended_action'])}</strong></article>"
+        f"<article><span>复核时限</span><strong>{summary['recommended_review_window_hours'] if summary['recommended_review_window_hours'] is not None else '—'} 小时</strong><small>{'需要升级值守负责人' if summary['escalation_required'] else '按常规队列跟进'}</small></article></div>"
     )
     rows = "".join(
         "<tr>"
