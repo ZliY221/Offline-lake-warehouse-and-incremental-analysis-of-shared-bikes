@@ -54,6 +54,14 @@ class OperationsCenterTests(unittest.TestCase):
         self.assertIn("ATTENTION_REQUIRED", html)
         self.assertIn("silver_row_reconciliation", html)
 
+    def test_report_uses_accessible_offline_workspace_layout(self) -> None:
+        html = render_operations_html(build_operations_snapshot(quality(), orchestration()))
+
+        self.assertIn('class="skip" href="#content"', html)
+        self.assertIn("OFFLINE LAKEHOUSE · BATCH DESK", html)
+        self.assertIn('class="workspace"', html)
+        self.assertIn("@media(max-width:680px)", html)
+
     def test_bundle_writes_json_and_standalone_html(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -61,7 +69,7 @@ class OperationsCenterTests(unittest.TestCase):
             write_operations_bundle(snapshot, root / "snapshot.json", root / "index.html")
 
             self.assertEqual(snapshot, json.loads((root / "snapshot.json").read_text(encoding="utf-8")))
-            self.assertIn("共享单车离线湖仓运行控制中心", (root / "index.html").read_text(encoding="utf-8"))
+            self.assertIn("共享单车离线湖仓运行工作台", (root / "index.html").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

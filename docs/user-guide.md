@@ -1,6 +1,6 @@
 # 用户使用指南
 
-适用版本：`v2.6.0`
+适用版本：`v2.9.0`
 
 本指南随项目版本同步更新，覆盖当前版本的启动、增量处理、质量治理和恢复操作。首次使用建议先阅读仓库首页的项目简介、数据架构和常用入口，再按本指南选择运行模式。
 
@@ -69,7 +69,7 @@ build-quality-actions --report build/reports/data-quality.json --output build/re
 build-lakehouse-operations --quality-report build/reports/data-quality.json --orchestration-state build/control/orchestration-run.json --output-json build/operations/snapshot.json --output-html build/operations/index.html
 ```
 
-控制中心将任务状态、依赖、尝试次数、质量检查、分层数据规模和修复队列汇总到一个 JSON 快照与独立 HTML 页面。无需启动服务即可查看；加入 `--require-ready` 后可直接作为离线发布门禁。
+控制中心将任务状态、依赖、尝试次数、质量检查、分层数据规模和修复队列汇总到一个 JSON 快照与独立 HTML 页面。无需启动服务即可查看；加入 `--require-ready` 后可直接作为离线发布门禁。v2.9.0 页面采用离线批次工作台布局：顶部先给出发布结论和关键指标，任务表与分层路线并列展示，数据规模和质量处置放在后续区域；桌面端使用侧栏定位，移动端自动收起次要入口。
 
 将多个运行快照汇总为历史看板：
 
