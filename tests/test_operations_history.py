@@ -66,6 +66,23 @@ class OperationsHistoryTest(unittest.TestCase):
         self.assertEqual(2, progressed["remaining_count"])
         self.assertEqual(0.5, progressed["completion_rate"])
         self.assertEqual(["NOTIFY_OWNER_ROUTE", "RECORD_REVIEW_RESULT"], progressed["remaining_steps"])
+        overdue_order = build_operations_history(
+            [self.snapshot("run-2", False, 2)],
+            as_of_utc="2026-10-15T03:00:02Z",
+            completed_handoff_steps=["REVIEW_QUALITY_CHECKS", "VERIFY_REPAIR_EVIDENCE"],
+        )["summary"]["recovery_work_order"]
+        self.assertEqual("ACTION_REQUIRED", overdue_order["handoff_readiness"])
+        self.assertEqual(
+            ["SLA_BREACHED", "NOTIFY_OWNER_ROUTE", "RECORD_REVIEW_RESULT"],
+            overdue_order["handoff_blockers"],
+        )
+        ready_order = build_operations_history(
+            [self.snapshot("run-1", True)],
+            as_of_utc="2026-10-15T01:00:01Z",
+            completed_handoff_steps=["VERIFY_RELEASE_EVIDENCE", "CONFIRM_NEXT_BATCH"],
+        )["summary"]["recovery_work_order"]
+        self.assertEqual("READY", ready_order["handoff_readiness"])
+        self.assertEqual([], ready_order["handoff_blockers"])
         self.assertEqual(0.5, history["summary"]["recent_readiness_rate"])
         self.assertEqual("AT_RISK", history["summary"]["trend_status"])
         self.assertEqual(2, history["summary"]["latest_failed_quality_check_delta"])
@@ -120,6 +137,8 @@ class OperationsHistoryTest(unittest.TestCase):
         self.assertEqual("NO_DATA", history["summary"]["recovery_work_order"]["age_status"])
         self.assertEqual("NOT_APPLICABLE", history["summary"]["recovery_work_order"]["sla_status"])
         self.assertEqual(["COLLECT_FIRST_RUN"], history["summary"]["recovery_work_order"]["handoff_checklist"])
+        self.assertEqual("AWAITING_DATA", history["summary"]["recovery_work_order"]["handoff_readiness"])
+        self.assertEqual(["FIRST_RUN_REQUIRED"], history["summary"]["recovery_work_order"]["handoff_blockers"])
         self.assertIsNone(history["summary"]["latest_failed_quality_check_delta"])
         self.assertEqual("NO_BASELINE", history["summary"]["latest_change_status"])
         self.assertIn("暂无运行快照", render_operations_history_html(history))

@@ -268,9 +268,23 @@ def build_operations_history(
         "completed_steps": completed_steps,
         "remaining_steps": remaining_steps,
     }
+    if latest is None:
+        handoff_readiness = "AWAITING_DATA"
+        handoff_blockers = ["FIRST_RUN_REQUIRED"]
+    elif sla_status == "BREACHED":
+        handoff_readiness = "ACTION_REQUIRED"
+        handoff_blockers = ["SLA_BREACHED", *remaining_steps]
+    elif remaining_steps:
+        handoff_readiness = "IN_PROGRESS"
+        handoff_blockers = remaining_steps
+    else:
+        handoff_readiness = "READY"
+        handoff_blockers = []
+    recovery_work_order["handoff_readiness"] = handoff_readiness
+    recovery_work_order["handoff_blockers"] = handoff_blockers
 
     return {
-        "history_version": "2.7",
+        "history_version": "2.8",
         "generated_at_utc": utc_timestamp(),
         "summary": {
             "run_count": len(rows),
