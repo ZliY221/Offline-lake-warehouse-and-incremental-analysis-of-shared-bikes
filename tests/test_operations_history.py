@@ -52,6 +52,10 @@ class OperationsHistoryTest(unittest.TestCase):
         self.assertEqual("FRESH", overdue["age_status"])
         self.assertEqual("BREACHED", overdue["sla_status"])
         self.assertIsNone(overdue["remaining_review_hours"])
+        self.assertEqual(
+            ["REVIEW_QUALITY_CHECKS", "VERIFY_REPAIR_EVIDENCE", "NOTIFY_OWNER_ROUTE", "RECORD_REVIEW_RESULT"],
+            overdue["handoff_checklist"],
+        )
         self.assertEqual(0.5, history["summary"]["recent_readiness_rate"])
         self.assertEqual("AT_RISK", history["summary"]["trend_status"])
         self.assertEqual(2, history["summary"]["latest_failed_quality_check_delta"])
@@ -103,12 +107,16 @@ class OperationsHistoryTest(unittest.TestCase):
         self.assertEqual("UNASSIGNED", history["summary"]["recovery_work_order"]["owner_route"])
         self.assertEqual("NO_DATA", history["summary"]["recovery_work_order"]["age_status"])
         self.assertEqual("NOT_APPLICABLE", history["summary"]["recovery_work_order"]["sla_status"])
+        self.assertEqual(["COLLECT_FIRST_RUN"], history["summary"]["recovery_work_order"]["handoff_checklist"])
         self.assertIsNone(history["summary"]["latest_failed_quality_check_delta"])
         self.assertEqual("NO_BASELINE", history["summary"]["latest_change_status"])
         self.assertIn("暂无运行快照", render_operations_history_html(history))
 
     def test_history_html_escapes_run_identity(self) -> None:
         history = build_operations_history([self.snapshot("<script>alert(1)</script>", True)])
+        work_order = history["summary"]["recovery_work_order"]
+        self.assertIsNone(work_order["age_hours"])
+        self.assertEqual("UNKNOWN", work_order["age_status"])
         html = render_operations_history_html(history)
         self.assertNotIn("<script>", html)
         self.assertIn("&lt;script&gt;", html)

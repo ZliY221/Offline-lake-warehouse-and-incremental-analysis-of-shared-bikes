@@ -195,21 +195,26 @@ def build_operations_history(
         overdue_by_hours = max(0, int((observed_at - due_at).total_seconds() // 3600))
     recovery_work_order["review_status"] = review_status
     recovery_work_order["overdue_by_hours"] = overdue_by_hours
-    work_order_age_hours = 0
+    work_order_age_hours = None
     if latest is not None:
         try:
             opened_at = datetime.fromisoformat(latest["generated_at_utc"].replace("Z", "+00:00"))
-            observed_at = datetime.fromisoformat((as_of_utc or utc_timestamp()).replace("Z", "+00:00"))
-        except ValueError as error:
-            raise ValueError("snapshot and as_of_utc timestamps must use ISO-8601") from error
-        if opened_at.tzinfo is None:
-            opened_at = opened_at.replace(tzinfo=timezone.utc)
-        if observed_at.tzinfo is None:
-            observed_at = observed_at.replace(tzinfo=timezone.utc)
-        work_order_age_hours = max(0, int((observed_at - opened_at).total_seconds() // 3600))
+        except ValueError:
+            opened_at = None
+        if opened_at is not None:
+            try:
+                observed_at = datetime.fromisoformat((as_of_utc or utc_timestamp()).replace("Z", "+00:00"))
+            except ValueError as error:
+                raise ValueError("as_of_utc must be an ISO-8601 timestamp") from error
+            if opened_at.tzinfo is None:
+                opened_at = opened_at.replace(tzinfo=timezone.utc)
+            if observed_at.tzinfo is None:
+                observed_at = observed_at.replace(tzinfo=timezone.utc)
+            work_order_age_hours = max(0, int((observed_at - opened_at).total_seconds() // 3600))
     recovery_work_order["age_hours"] = work_order_age_hours
     recovery_work_order["age_status"] = (
-        "NO_DATA" if latest is None else "FRESH" if work_order_age_hours <= 24 else "AGING"
+        "NO_DATA" if latest is None else "UNKNOWN" if work_order_age_hours is None
+        else "FRESH" if work_order_age_hours <= 24 else "AGING"
     )
     remaining_review_hours = None
     if review_status == "NOT_REQUIRED":
@@ -238,9 +243,19 @@ def build_operations_history(
         f"{recovery_work_order['work_order_id']} · {action_priority} · {recommended_action} · "
         f"{owner_route} · {review_status}"
     )
+    if latest is None:
+        handoff_checklist = ["COLLECT_FIRST_RUN"]
+    elif recommended_action == "CONTINUE_RELEASE":
+        handoff_checklist = ["VERIFY_RELEASE_EVIDENCE", "CONFIRM_NEXT_BATCH"]
+    else:
+        handoff_checklist = ["REVIEW_QUALITY_CHECKS", "VERIFY_REPAIR_EVIDENCE"]
+        if escalation_required:
+            handoff_checklist.append("NOTIFY_OWNER_ROUTE")
+        handoff_checklist.append("RECORD_REVIEW_RESULT")
+    recovery_work_order["handoff_checklist"] = handoff_checklist
 
     return {
-        "history_version": "2.5",
+        "history_version": "2.6",
         "generated_at_utc": utc_timestamp(),
         "summary": {
             "run_count": len(rows),
