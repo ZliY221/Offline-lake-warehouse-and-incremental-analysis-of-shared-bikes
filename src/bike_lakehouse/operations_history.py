@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from datetime import datetime, timedelta, timezone
 from html import escape
 from pathlib import Path
 from typing import Any, Iterable
@@ -167,9 +168,21 @@ def build_operations_history(
         "review_window_hours": review_window_hours,
         "escalation_required": escalation_required,
     }
+    review_due_at_utc = None
+    if latest is not None and review_window_hours is not None:
+        try:
+            latest_generated_at = datetime.fromisoformat(latest["generated_at_utc"].replace("Z", "+00:00"))
+            if latest_generated_at.tzinfo is None:
+                latest_generated_at = latest_generated_at.replace(tzinfo=timezone.utc)
+            review_due_at_utc = (
+                latest_generated_at.astimezone(timezone.utc) + timedelta(hours=review_window_hours)
+            ).isoformat().replace("+00:00", "Z")
+        except ValueError:
+            review_due_at_utc = None
+    recovery_work_order["review_due_at_utc"] = review_due_at_utc
 
     return {
-        "history_version": "2.0",
+        "history_version": "2.1",
         "generated_at_utc": utc_timestamp(),
         "summary": {
             "run_count": len(rows),
