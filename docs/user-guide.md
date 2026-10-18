@@ -1,6 +1,6 @@
 # 用户使用指南
 
-适用版本：`v2.9.0`
+适用版本：`v2.10.0`
 
 本指南随项目版本同步更新，覆盖当前版本的启动、增量处理、质量治理和恢复操作。首次使用建议先阅读仓库首页的项目简介、数据架构和常用入口，再按本指南选择运行模式。
 
@@ -29,6 +29,14 @@ python scripts/bootstrap.py -- --mode pipeline
 主要结果位于 `build/quickstart/`，包括分层 Parquet 数据、质量报告和执行摘要。
 
 ## 3. 增量与回填
+
+正式回填前先执行只读影响预演：
+
+```powershell
+plan-trip-backfill --input data/trips.ndjson --target-date 2026-10-01 --bronze build/lakehouse/bronze/trips --silver-valid build/lakehouse/silver/trips_valid --output build/backfill/impact-plan.json
+```
+
+预演报告列出来源行数、去重后的行程与骑行者数量、目标 Bronze/Silver 现有行数、扫描文件数量以及潜在受影响的 cohort 日期。预演会执行日期和跨分区主键检查，但不会创建运行清单或改写任何湖仓分区；输出文件仅用于人工复核。
 
 按日期执行受控回填：
 

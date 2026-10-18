@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/ci.yml/badge.svg)](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/ci.yml)
 [![Portable smoke](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/portable-smoke.yml/badge.svg)](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/portable-smoke.yml)
-![Version](https://img.shields.io/badge/version-v2.9.0-2563eb)
+![Version](https://img.shields.io/badge/version-v2.10.0-2563eb)
 ![PySpark](https://img.shields.io/badge/PySpark-4.2-e25a1c)
 ![Storage](https://img.shields.io/badge/storage-Parquet-2563eb)
 
@@ -72,6 +72,7 @@ flowchart LR
 
 - 使用文件指纹和批次 ID 保证相同输入可安全重复执行。
 - 回填前完成日期、路径和跨分区主键预检，仅重算受影响分区。
+- 回填预演只读计算来源规模、现有分区行数、受影响骑行者和潜在 cohort 日期，执行前即可核对影响范围。
 - 运行状态原子落盘，失败任务可按已有进度恢复。
 
 ### 质量与存储治理
@@ -121,6 +122,7 @@ tests/                  Python 与 Spark 验证
 | 环境检查 | `python scripts/project_doctor.py --profile full` |
 | 完整湖仓 | `python scripts/quickstart.py --mode pipeline` |
 | 日期回填 | `./scripts/backfill-date.ps1 -IngestionDate 2026-10-01` |
+| 回填影响预演 | `plan-trip-backfill --input data/trips.ndjson --target-date 2026-10-01 --bronze build/lakehouse/bronze/trips --silver-valid build/lakehouse/silver/trips_valid` |
 | 小文件治理 | `./scripts/compact-lakehouse.ps1` |
 | 压实状态 | `inspect-compaction-journal build/compaction/journal.json --pretty` |
 | 质量处置计划 | `build-quality-actions --report build/reports/data-quality.json --output build/reports/quality-actions.json` |
@@ -148,4 +150,4 @@ tests/                  Python 与 Spark 验证
 
 ## 版本与维护
 
-当前版本为 `v2.9.0`。每次发布同步维护[用户使用指南](docs/user-guide.md)、[版本记录](CHANGELOG.md)和[版本摘要](VERSION_LOG.md)。
+当前版本为 `v2.10.0`。每次发布同步维护[用户使用指南](docs/user-guide.md)、[版本记录](CHANGELOG.md)和[版本摘要](VERSION_LOG.md)。
