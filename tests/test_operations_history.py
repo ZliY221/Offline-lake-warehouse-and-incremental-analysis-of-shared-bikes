@@ -41,6 +41,11 @@ class OperationsHistoryTest(unittest.TestCase):
         self.assertEqual("run-2", work_order["run_id"])
         self.assertEqual("P0", work_order["priority"])
         self.assertEqual("2026-10-15T01:00:02Z", work_order["review_due_at_utc"])
+        overdue = build_operations_history(
+            [self.snapshot("run-2", False, 2)], as_of_utc="2026-10-15T03:00:02Z"
+        )["summary"]["recovery_work_order"]
+        self.assertEqual("OVERDUE", overdue["review_status"])
+        self.assertEqual(2, overdue["overdue_by_hours"])
         self.assertEqual(0.5, history["summary"]["recent_readiness_rate"])
         self.assertEqual("AT_RISK", history["summary"]["trend_status"])
         self.assertEqual(2, history["summary"]["latest_failed_quality_check_delta"])
@@ -88,6 +93,7 @@ class OperationsHistoryTest(unittest.TestCase):
         self.assertEqual("MONITORING", history["summary"]["recovery_work_order"]["state"])
         self.assertIsNone(history["summary"]["recovery_work_order"]["run_id"])
         self.assertIsNone(history["summary"]["recovery_work_order"]["review_due_at_utc"])
+        self.assertEqual("NOT_REQUIRED", history["summary"]["recovery_work_order"]["review_status"])
         self.assertIsNone(history["summary"]["latest_failed_quality_check_delta"])
         self.assertEqual("NO_BASELINE", history["summary"]["latest_change_status"])
         self.assertIn("暂无运行快照", render_operations_history_html(history))

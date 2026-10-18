@@ -13,7 +13,8 @@ from .batch_manifest import utc_timestamp, write_json_atomic
 
 
 def build_operations_history(
-    snapshots: Iterable[dict[str, Any]], *, recent_window: int = 5, readiness_threshold: float = 0.8
+    snapshots: Iterable[dict[str, Any]], *, recent_window: int = 5, readiness_threshold: float = 0.8,
+    as_of_utc: str | None = None,
 ) -> dict[str, Any]:
     if not 1 <= recent_window <= 50:
         raise ValueError("recent_window must be between 1 and 50")
@@ -180,9 +181,23 @@ def build_operations_history(
         except ValueError:
             review_due_at_utc = None
     recovery_work_order["review_due_at_utc"] = review_due_at_utc
+    review_status = "NOT_REQUIRED"
+    overdue_by_hours = 0
+    if review_due_at_utc is not None:
+        try:
+            observed_at = datetime.fromisoformat((as_of_utc or utc_timestamp()).replace("Z", "+00:00"))
+            due_at = datetime.fromisoformat(review_due_at_utc.replace("Z", "+00:00"))
+        except ValueError as error:
+            raise ValueError("as_of_utc must be an ISO-8601 timestamp") from error
+        if observed_at.tzinfo is None:
+            observed_at = observed_at.replace(tzinfo=timezone.utc)
+        review_status = "OVERDUE" if observed_at > due_at else "PENDING"
+        overdue_by_hours = max(0, int((observed_at - due_at).total_seconds() // 3600))
+    recovery_work_order["review_status"] = review_status
+    recovery_work_order["overdue_by_hours"] = overdue_by_hours
 
     return {
-        "history_version": "2.1",
+        "history_version": "2.2",
         "generated_at_utc": utc_timestamp(),
         "summary": {
             "run_count": len(rows),
