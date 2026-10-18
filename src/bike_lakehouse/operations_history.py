@@ -211,6 +211,21 @@ def build_operations_history(
     recovery_work_order["age_status"] = (
         "NO_DATA" if latest is None else "FRESH" if work_order_age_hours <= 24 else "AGING"
     )
+    remaining_review_hours = None
+    if review_status == "NOT_REQUIRED":
+        sla_status = "NOT_APPLICABLE"
+    elif review_status == "OVERDUE":
+        sla_status = "BREACHED"
+    else:
+        due_at = datetime.fromisoformat(review_due_at_utc.replace("Z", "+00:00"))
+        observed_at = datetime.fromisoformat((as_of_utc or utc_timestamp()).replace("Z", "+00:00"))
+        if observed_at.tzinfo is None:
+            observed_at = observed_at.replace(tzinfo=timezone.utc)
+        remaining_review_hours = max(0, int((due_at - observed_at).total_seconds() // 3600))
+        warning_window = max(1, int(review_window_hours * 0.25))
+        sla_status = "DUE_SOON" if remaining_review_hours <= warning_window else "ON_TRACK"
+    recovery_work_order["sla_status"] = sla_status
+    recovery_work_order["remaining_review_hours"] = remaining_review_hours
     owner_route = {
         "P0": "DATA_PLATFORM_LEAD",
         "P1": "DATA_QUALITY_ONCALL",
@@ -225,7 +240,7 @@ def build_operations_history(
     )
 
     return {
-        "history_version": "2.4",
+        "history_version": "2.5",
         "generated_at_utc": utc_timestamp(),
         "summary": {
             "run_count": len(rows),
