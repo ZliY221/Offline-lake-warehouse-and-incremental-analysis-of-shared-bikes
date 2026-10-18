@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/ci.yml/badge.svg)](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/ci.yml)
 [![Portable smoke](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/portable-smoke.yml/badge.svg)](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/portable-smoke.yml)
-![Version](https://img.shields.io/badge/version-v2.3.0-0f766e)
+![Version](https://img.shields.io/badge/version-v2.4.0-0f766e)
 ![PySpark](https://img.shields.io/badge/PySpark-4.2-e25a1c)
 ![Storage](https://img.shields.io/badge/storage-Parquet-2563eb)
 
@@ -96,6 +96,7 @@ flowchart LR
 - 根据批次生成时间与优先级自动计算工作单复核截止时间。
 - 自动标记待复核、已逾期或无需复核，并统计逾期小时数。
 - 按优先级路由工作单负责人，并生成可直接复制的交接摘要。
+- 统计恢复工作单已开启时长，并区分新鲜与老化任务。
 - 按清洁、可控和高债务区间统计批次分布，并突出近期高债务批次数。
 - 根据发布状态、债务水平与近期趋势生成标准化下一步处置建议。
 
@@ -145,4 +146,4 @@ tests/                  Python 与 Spark 验证
 
 ## 版本与维护
 
-当前版本为 `v2.3.0`。每次发布同步维护[用户使用指南](docs/user-guide.md)、[版本记录](CHANGELOG.md)和[版本摘要](VERSION_LOG.md)。
+当前版本为 `v2.4.0`。每次发布同步维护[用户使用指南](docs/user-guide.md)、[版本记录](CHANGELOG.md)和[版本摘要](VERSION_LOG.md)。

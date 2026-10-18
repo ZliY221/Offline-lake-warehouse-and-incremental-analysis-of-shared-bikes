@@ -195,6 +195,22 @@ def build_operations_history(
         overdue_by_hours = max(0, int((observed_at - due_at).total_seconds() // 3600))
     recovery_work_order["review_status"] = review_status
     recovery_work_order["overdue_by_hours"] = overdue_by_hours
+    work_order_age_hours = 0
+    if latest is not None:
+        try:
+            opened_at = datetime.fromisoformat(latest["generated_at_utc"].replace("Z", "+00:00"))
+            observed_at = datetime.fromisoformat((as_of_utc or utc_timestamp()).replace("Z", "+00:00"))
+        except ValueError as error:
+            raise ValueError("snapshot and as_of_utc timestamps must use ISO-8601") from error
+        if opened_at.tzinfo is None:
+            opened_at = opened_at.replace(tzinfo=timezone.utc)
+        if observed_at.tzinfo is None:
+            observed_at = observed_at.replace(tzinfo=timezone.utc)
+        work_order_age_hours = max(0, int((observed_at - opened_at).total_seconds() // 3600))
+    recovery_work_order["age_hours"] = work_order_age_hours
+    recovery_work_order["age_status"] = (
+        "NO_DATA" if latest is None else "FRESH" if work_order_age_hours <= 24 else "AGING"
+    )
     owner_route = {
         "P0": "DATA_PLATFORM_LEAD",
         "P1": "DATA_QUALITY_ONCALL",
@@ -209,7 +225,7 @@ def build_operations_history(
     )
 
     return {
-        "history_version": "2.3",
+        "history_version": "2.4",
         "generated_at_utc": utc_timestamp(),
         "summary": {
             "run_count": len(rows),
