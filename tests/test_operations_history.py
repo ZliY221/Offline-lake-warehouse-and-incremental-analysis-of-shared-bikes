@@ -46,6 +46,8 @@ class OperationsHistoryTest(unittest.TestCase):
         )["summary"]["recovery_work_order"]
         self.assertEqual("OVERDUE", overdue["review_status"])
         self.assertEqual(2, overdue["overdue_by_hours"])
+        self.assertEqual("DATA_PLATFORM_LEAD", overdue["owner_route"])
+        self.assertIn("OVERDUE", overdue["handoff_summary"])
         self.assertEqual(0.5, history["summary"]["recent_readiness_rate"])
         self.assertEqual("AT_RISK", history["summary"]["trend_status"])
         self.assertEqual(2, history["summary"]["latest_failed_quality_check_delta"])
@@ -94,6 +96,7 @@ class OperationsHistoryTest(unittest.TestCase):
         self.assertIsNone(history["summary"]["recovery_work_order"]["run_id"])
         self.assertIsNone(history["summary"]["recovery_work_order"]["review_due_at_utc"])
         self.assertEqual("NOT_REQUIRED", history["summary"]["recovery_work_order"]["review_status"])
+        self.assertEqual("UNASSIGNED", history["summary"]["recovery_work_order"]["owner_route"])
         self.assertIsNone(history["summary"]["latest_failed_quality_check_delta"])
         self.assertEqual("NO_BASELINE", history["summary"]["latest_change_status"])
         self.assertIn("暂无运行快照", render_operations_history_html(history))

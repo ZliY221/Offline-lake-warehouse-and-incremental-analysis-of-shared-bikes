@@ -195,9 +195,21 @@ def build_operations_history(
         overdue_by_hours = max(0, int((observed_at - due_at).total_seconds() // 3600))
     recovery_work_order["review_status"] = review_status
     recovery_work_order["overdue_by_hours"] = overdue_by_hours
+    owner_route = {
+        "P0": "DATA_PLATFORM_LEAD",
+        "P1": "DATA_QUALITY_ONCALL",
+        "P2": "BATCH_OPERATOR",
+        "P3": "BATCH_OPERATOR",
+        "NONE": "UNASSIGNED",
+    }[action_priority]
+    recovery_work_order["owner_route"] = owner_route
+    recovery_work_order["handoff_summary"] = (
+        f"{recovery_work_order['work_order_id']} · {action_priority} · {recommended_action} · "
+        f"{owner_route} · {review_status}"
+    )
 
     return {
-        "history_version": "2.2",
+        "history_version": "2.3",
         "generated_at_utc": utc_timestamp(),
         "summary": {
             "run_count": len(rows),
@@ -259,7 +271,9 @@ def render_operations_history_html(history: dict[str, Any]) -> str:
         f"<article><span>当前 / 近期平均 / 峰值</span><strong>{summary['latest_quality_debt_score']} / {summary['recent_average_quality_debt_score']:.1f} / {summary['peak_quality_debt_score']}</strong></article>"
         f"<article><span>近期高债务批次</span><strong>{summary['recent_high_debt_count']} 次</strong><small>历史高债务 {summary['quality_debt_bands']['HIGH']} 次</small></article>"
         f"<article><span>建议动作 · {escape(summary['recommended_action_priority'])}</span><strong>{escape(summary['recommended_action'])}</strong></article>"
-        f"<article><span>复核时限</span><strong>{summary['recommended_review_window_hours'] if summary['recommended_review_window_hours'] is not None else '—'} 小时</strong><small>{'需要升级值守负责人' if summary['escalation_required'] else '按常规队列跟进'}</small></article></div>"
+        f"<article><span>复核时限</span><strong>{summary['recommended_review_window_hours'] if summary['recommended_review_window_hours'] is not None else '—'} 小时</strong><small>{'需要升级值守负责人' if summary['escalation_required'] else '按常规队列跟进'}</small></article>"
+        f"<article><span>恢复工作单</span><strong>{escape(summary['recovery_work_order']['work_order_id'])}</strong>"
+        f"<small>{escape(summary['recovery_work_order']['handoff_summary'])}</small></article></div>"
     )
     rows = "".join(
         "<tr>"
