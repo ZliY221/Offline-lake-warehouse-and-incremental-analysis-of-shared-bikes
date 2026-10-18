@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from html import escape
 from pathlib import Path
 from typing import Any, Iterable
@@ -153,9 +154,22 @@ def build_operations_history(
         "NONE": None,
     }[action_priority]
     escalation_required = action_priority in {"P0", "P1"}
+    work_order_material = (
+        f"{latest['run_id']}:{recommended_action}:{action_priority}"
+        if latest is not None else "NO_DATA"
+    )
+    recovery_work_order = {
+        "work_order_id": "REC-" + hashlib.sha256(work_order_material.encode("utf-8")).hexdigest()[:12].upper(),
+        "state": "OPEN" if latest is not None and recommended_action != "CONTINUE_RELEASE" else "MONITORING",
+        "run_id": latest["run_id"] if latest is not None else None,
+        "action": recommended_action,
+        "priority": action_priority,
+        "review_window_hours": review_window_hours,
+        "escalation_required": escalation_required,
+    }
 
     return {
-        "history_version": "1.9",
+        "history_version": "2.0",
         "generated_at_utc": utc_timestamp(),
         "summary": {
             "run_count": len(rows),
@@ -194,6 +208,7 @@ def build_operations_history(
             "failed_quality_check_count": sum(row["failed_quality_check_count"] for row in rows),
             "remediation_action_count": sum(row["remediation_action_count"] for row in rows),
             "latest_quality_debt_score": latest_quality_debt,
+            "recovery_work_order": recovery_work_order,
         },
         "runs": rows,
     }
