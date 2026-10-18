@@ -56,6 +56,16 @@ class OperationsHistoryTest(unittest.TestCase):
             ["REVIEW_QUALITY_CHECKS", "VERIFY_REPAIR_EVIDENCE", "NOTIFY_OWNER_ROUTE", "RECORD_REVIEW_RESULT"],
             overdue["handoff_checklist"],
         )
+        progressed = build_operations_history(
+            [self.snapshot("run-2", False, 2)],
+            as_of_utc="2026-10-15T03:00:02Z",
+            completed_handoff_steps=["REVIEW_QUALITY_CHECKS", "VERIFY_REPAIR_EVIDENCE"],
+        )["summary"]["recovery_work_order"]["handoff_progress"]
+        self.assertEqual(4, progressed["total_count"])
+        self.assertEqual(2, progressed["completed_count"])
+        self.assertEqual(2, progressed["remaining_count"])
+        self.assertEqual(0.5, progressed["completion_rate"])
+        self.assertEqual(["NOTIFY_OWNER_ROUTE", "RECORD_REVIEW_RESULT"], progressed["remaining_steps"])
         self.assertEqual(0.5, history["summary"]["recent_readiness_rate"])
         self.assertEqual("AT_RISK", history["summary"]["trend_status"])
         self.assertEqual(2, history["summary"]["latest_failed_quality_check_delta"])
@@ -81,6 +91,8 @@ class OperationsHistoryTest(unittest.TestCase):
         invalid_flag["release_ready"] = "false"
         with self.assertRaisesRegex(ValueError, "release_ready must be a boolean"):
             build_operations_history([invalid_flag])
+        with self.assertRaisesRegex(ValueError, "unknown completed handoff steps"):
+            build_operations_history([self.snapshot("run-1", True)], completed_handoff_steps=["UNKNOWN_STEP"])
 
     def test_empty_history_has_zero_summary_and_readable_html(self) -> None:
         history = build_operations_history([])

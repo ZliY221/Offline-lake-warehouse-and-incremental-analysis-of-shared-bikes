@@ -14,7 +14,7 @@ from .batch_manifest import utc_timestamp, write_json_atomic
 
 def build_operations_history(
     snapshots: Iterable[dict[str, Any]], *, recent_window: int = 5, readiness_threshold: float = 0.8,
-    as_of_utc: str | None = None,
+    as_of_utc: str | None = None, completed_handoff_steps: Iterable[str] = (),
 ) -> dict[str, Any]:
     if not 1 <= recent_window <= 50:
         raise ValueError("recent_window must be between 1 and 50")
@@ -253,9 +253,24 @@ def build_operations_history(
             handoff_checklist.append("NOTIFY_OWNER_ROUTE")
         handoff_checklist.append("RECORD_REVIEW_RESULT")
     recovery_work_order["handoff_checklist"] = handoff_checklist
+    completed_steps = list(dict.fromkeys(completed_handoff_steps))
+    if any(not isinstance(step, str) or not step.strip() for step in completed_steps):
+        raise ValueError("completed_handoff_steps must contain non-empty strings")
+    unknown_steps = sorted(set(completed_steps) - set(handoff_checklist))
+    if unknown_steps:
+        raise ValueError(f"unknown completed handoff steps: {', '.join(unknown_steps)}")
+    remaining_steps = [step for step in handoff_checklist if step not in completed_steps]
+    recovery_work_order["handoff_progress"] = {
+        "total_count": len(handoff_checklist),
+        "completed_count": len(completed_steps),
+        "remaining_count": len(remaining_steps),
+        "completion_rate": round(len(completed_steps) / len(handoff_checklist), 4),
+        "completed_steps": completed_steps,
+        "remaining_steps": remaining_steps,
+    }
 
     return {
-        "history_version": "2.6",
+        "history_version": "2.7",
         "generated_at_utc": utc_timestamp(),
         "summary": {
             "run_count": len(rows),

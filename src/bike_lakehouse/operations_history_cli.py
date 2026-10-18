@@ -16,12 +16,14 @@ def main() -> int:
     parser.add_argument("--output-html", type=Path, required=True)
     parser.add_argument("--recent-window", type=int, default=5)
     parser.add_argument("--readiness-threshold", type=float, default=0.8)
+    parser.add_argument("--completed-handoff-step", action="append", default=[])
     args = parser.parse_args()
     payloads = [json.loads(path.read_text(encoding="utf-8")) for path in args.snapshots]
     history = build_operations_history(
         payloads,
         recent_window=args.recent_window,
         readiness_threshold=args.readiness_threshold,
+        completed_handoff_steps=args.completed_handoff_step,
     )
     write_operations_history(history, args.output_json, args.output_html)
     print(json.dumps({

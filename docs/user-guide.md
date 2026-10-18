@@ -77,7 +77,7 @@ build-lakehouse-operations --quality-report build/reports/data-quality.json --or
 build-lakehouse-history build/operations/run-*/snapshot.json --recent-window 5 --readiness-threshold 0.8 --output-json build/history/history.json --output-html build/history/index.html
 ```
 
-历史摘要会将“失败检查数 × 2 + 待处置动作数”计算为质量债务分，并展示最新值、近期平均值、历史峰值和相邻批次环比。该指标用于快速比较修复压力，不替代明细检查；环比为正时应继续查看失败检查和处置动作来源。建议动作同时标记 P0 至 P3 优先级：P0 应在 1 小时内复核，P1 应在 4 小时内处理，P2 在 24 小时内跟进，P3 在 72 小时内复核；P0/P1 还会标记为需要升级值守负责人。`recovery_work_order` 会把最新批次、建议动作、优先级和复核要求整理成稳定编号的离线恢复工作单，便于跨班次交接；`review_due_at_utc` 是按批次生成时间自动计算的复核截止时间，`review_status` 和 `overdue_by_hours` 用于判断是否逾期以及逾期时长。`owner_route` 会按优先级分配平台负责人、质量值守或批处理操作员，`handoff_summary` 可直接用于换班交接。`age_hours` 与 `age_status` 用于识别已经开启超过 24 小时的老化工作单，`sla_status` 进一步区分 `ON_TRACK`、`DUE_SOON`、`BREACHED` 和 `NOT_APPLICABLE`。`handoff_checklist` 给出证据复核、负责人通知和结果登记步骤，交接人员应按顺序完成。
+历史摘要会将“失败检查数 × 2 + 待处置动作数”计算为质量债务分，并展示最新值、近期平均值、历史峰值和相邻批次环比。该指标用于快速比较修复压力，不替代明细检查；环比为正时应继续查看失败检查和处置动作来源。建议动作同时标记 P0 至 P3 优先级：P0 应在 1 小时内复核，P1 应在 4 小时内处理，P2 在 24 小时内跟进，P3 在 72 小时内复核；P0/P1 还会标记为需要升级值守负责人。`recovery_work_order` 会把最新批次、建议动作、优先级和复核要求整理成稳定编号的离线恢复工作单，便于跨班次交接；`review_due_at_utc` 是按批次生成时间自动计算的复核截止时间，`review_status` 和 `overdue_by_hours` 用于判断是否逾期以及逾期时长。`owner_route` 会按优先级分配平台负责人、质量值守或批处理操作员，`handoff_summary` 可直接用于换班交接。`age_hours` 与 `age_status` 用于识别已经开启超过 24 小时的老化工作单，`sla_status` 进一步区分 `ON_TRACK`、`DUE_SOON`、`BREACHED` 和 `NOT_APPLICABLE`。`handoff_checklist` 给出证据复核、负责人通知和结果登记步骤；运行历史命令可重复使用 `--completed-handoff-step` 登记完成项，`handoff_progress` 会返回完成率和剩余步骤。
 
 分数为 0 的批次归为 `CLEAN`，1 至 4 分归为 `MANAGEABLE`，5 分及以上归为 `HIGH`。看板会单独统计近期与历史高债务批次数，便于判断风险是否集中在最近窗口。
 
