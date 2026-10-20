@@ -158,3 +158,5 @@ inspect-compaction-journal build/compaction/journal.json --require-complete
 使用 `build_restore_point` 为已发布数据生成恢复点。恢复点保留原发布编号、分区与来源指纹；只有 `READY` 发布生成的恢复点可执行，避免从未通过质量门禁的候选数据回滚。
 
 使用 `retention_decision` 评估历史发布。达到保留天数且高于最低恢复版本数时返回 `ARCHIVE`；最低数量内的旧版本仍返回 `KEEP_MINIMUM`，防止清理后失去基本恢复能力。
+
+使用 `release_audit` 汇总发布组合。结果包含就绪与阻断数量、覆盖数据集和重复发布编号；存在阻断版本或编号重复时状态为 `REVIEW`，交付前应先核对来源和质量证据。

@@ -71,3 +71,15 @@ def retention_decision(*, age_days: int, retained_releases: int,
     return {"action": action, "age_days": age_days, "retained_releases": retained_releases,
             "minimum_releases": minimum_releases, "retention_days": retention_days,
             "archive_eligible": action == "ARCHIVE"}
+
+
+def release_audit(releases: list[DataRelease]) -> dict[str, Any]:
+    """Summarize release readiness and detect duplicate identifiers."""
+    ids = [item.release_id for item in releases]
+    ready = sum(item.status == "READY" for item in releases)
+    duplicates = sorted({item for item in ids if ids.count(item) > 1})
+    return {"release_count": len(releases), "ready_count": ready,
+            "blocked_count": len(releases) - ready,
+            "datasets": sorted({item.dataset for item in releases}),
+            "duplicate_release_ids": duplicates,
+            "audit_status": "REVIEW" if duplicates or ready != len(releases) else "PASS"}

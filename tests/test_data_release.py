@@ -1,6 +1,6 @@
 import unittest
 
-from bike_lakehouse.data_release import build_release, build_restore_point, retention_decision
+from bike_lakehouse.data_release import build_release, build_restore_point, release_audit, retention_decision
 
 
 class DataReleaseTests(unittest.TestCase):
@@ -29,4 +29,12 @@ class DataReleaseTests(unittest.TestCase):
     def test_retention_preserves_minimum_recovery_floor(self):
         self.assertEqual("KEEP_MINIMUM", retention_decision(age_days=200, retained_releases=3)["action"])
         self.assertEqual("ARCHIVE", retention_decision(age_days=200, retained_releases=8)["action"])
+
+    def test_audit_flags_blocked_and_duplicate_releases(self):
+        release = build_release(dataset="trips", partitions=["d=1"], row_count=10,
+                                schema_version="3", source_fingerprint="abc",
+                                quality_passed=False)
+        audit = release_audit([release, release])
+        self.assertEqual("REVIEW", audit["audit_status"])
+        self.assertEqual([release.release_id], audit["duplicate_release_ids"])
 
