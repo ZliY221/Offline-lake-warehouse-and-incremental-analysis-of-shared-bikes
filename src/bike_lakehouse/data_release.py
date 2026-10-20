@@ -59,3 +59,15 @@ def build_restore_point(release: DataRelease) -> RestorePoint:
     restore_id = "rst-" + sha256(f"{release.release_id}:{release.source_fingerprint}".encode()).hexdigest()[:12]
     return RestorePoint(restore_id, release.release_id, release.dataset, release.partitions,
                         release.source_fingerprint, release.status == "READY")
+
+
+def retention_decision(*, age_days: int, retained_releases: int,
+                       minimum_releases: int = 3, retention_days: int = 90) -> dict[str, Any]:
+    """Recommend keeping or archiving without removing the recovery floor."""
+    if min(age_days, retained_releases, minimum_releases, retention_days) < 0:
+        raise ValueError("retention values cannot be negative")
+    protected = retained_releases <= minimum_releases
+    action = "KEEP_MINIMUM" if protected else "ARCHIVE" if age_days >= retention_days else "KEEP_RECENT"
+    return {"action": action, "age_days": age_days, "retained_releases": retained_releases,
+            "minimum_releases": minimum_releases, "retention_days": retention_days,
+            "archive_eligible": action == "ARCHIVE"}

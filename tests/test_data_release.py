@@ -1,6 +1,6 @@
 import unittest
 
-from bike_lakehouse.data_release import build_release, build_restore_point
+from bike_lakehouse.data_release import build_release, build_restore_point, retention_decision
 
 
 class DataReleaseTests(unittest.TestCase):
@@ -25,4 +25,8 @@ class DataReleaseTests(unittest.TestCase):
         point = build_restore_point(release)
         self.assertTrue(point.executable)
         self.assertEqual(release.release_id, point.release_id)
+
+    def test_retention_preserves_minimum_recovery_floor(self):
+        self.assertEqual("KEEP_MINIMUM", retention_decision(age_days=200, retained_releases=3)["action"])
+        self.assertEqual("ARCHIVE", retention_decision(age_days=200, retained_releases=8)["action"])
 
