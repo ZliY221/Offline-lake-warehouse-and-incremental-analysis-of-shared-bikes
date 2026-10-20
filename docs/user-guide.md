@@ -150,3 +150,7 @@ inspect-compaction-journal build/compaction/journal.json --require-complete
 ## 9. 数据边界
 
 样例行程和骑行者标识均为合成数据。运行产物写入 `build/`，分区替换前会进行行数与指纹核对。
+
+## 10. 数据产品发布
+
+使用 `build_release` 将数据集名称、交付分区、行数、Schema 版本和来源指纹固化为稳定发布编号。只有质量门禁通过的清单状态为 `READY`；`BLOCKED` 清单不得交付下游。相同内容重复生成会得到相同编号，可用于核对离线交付物。
