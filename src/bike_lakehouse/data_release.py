@@ -83,3 +83,16 @@ def release_audit(releases: list[DataRelease]) -> dict[str, Any]:
             "datasets": sorted({item.dataset for item in releases}),
             "duplicate_release_ids": duplicates,
             "audit_status": "REVIEW" if duplicates or ready != len(releases) else "PASS"}
+
+
+def compare_releases(previous: DataRelease, current: DataRelease) -> dict[str, Any]:
+    """Explain what changed between two offline data-product releases."""
+    if previous.dataset != current.dataset:
+        raise ValueError("releases must belong to the same dataset")
+    added = sorted(set(current.partitions) - set(previous.partitions))
+    removed = sorted(set(previous.partitions) - set(current.partitions))
+    return {"dataset": current.dataset, "previous_release_id": previous.release_id,
+            "current_release_id": current.release_id, "added_partitions": added,
+            "removed_partitions": removed, "row_count_delta": current.row_count - previous.row_count,
+            "schema_changed": previous.schema_version != current.schema_version,
+            "requires_review": bool(removed or previous.schema_version != current.schema_version)}

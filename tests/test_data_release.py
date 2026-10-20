@@ -1,6 +1,6 @@
 import unittest
 
-from bike_lakehouse.data_release import build_release, build_restore_point, release_audit, retention_decision
+from bike_lakehouse.data_release import build_release, build_restore_point, compare_releases, release_audit, retention_decision
 
 
 class DataReleaseTests(unittest.TestCase):
@@ -37,4 +37,11 @@ class DataReleaseTests(unittest.TestCase):
         audit = release_audit([release, release])
         self.assertEqual("REVIEW", audit["audit_status"])
         self.assertEqual([release.release_id], audit["duplicate_release_ids"])
+
+    def test_release_comparison_flags_schema_and_removed_partitions(self):
+        old = build_release(dataset="trips", partitions=["d=1", "d=2"], row_count=20, schema_version="3", source_fingerprint="a", quality_passed=True)
+        new = build_release(dataset="trips", partitions=["d=2", "d=3"], row_count=25, schema_version="4", source_fingerprint="b", quality_passed=True)
+        diff = compare_releases(old, new)
+        self.assertEqual(["d=3"], diff["added_partitions"])
+        self.assertTrue(diff["requires_review"])
 
