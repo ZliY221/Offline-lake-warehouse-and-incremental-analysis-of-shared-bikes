@@ -1,6 +1,6 @@
 import unittest
 
-from bike_lakehouse.data_release import build_release, build_restore_point, compare_releases, delivery_sla, recovery_drill, release_audit, retention_decision
+from bike_lakehouse.data_release import build_release, build_restore_point, compare_releases, delivery_sla, recovery_drill, release_audit, release_handoff, retention_decision
 
 
 class DataReleaseTests(unittest.TestCase):
@@ -55,4 +55,10 @@ class DataReleaseTests(unittest.TestCase):
         result = delivery_sla(ready_at_epoch=100, due_at_epoch=200, delivered_at_epoch=230)
         self.assertEqual("DELIVERED_LATE", result["status"])
         self.assertEqual(30, result["delay_seconds"])
+
+    def test_handoff_blocks_missing_evidence(self):
+        release = build_release(dataset="trips", partitions=["d=1"], row_count=10, schema_version="3", source_fingerprint="a", quality_passed=True)
+        result = release_handoff(release, owner="data-team", consumer="reporting", evidence_links=[])
+        self.assertEqual("BLOCKED", result["handoff_status"])
+        self.assertIn("delivery evidence is missing", result["blockers"])
 

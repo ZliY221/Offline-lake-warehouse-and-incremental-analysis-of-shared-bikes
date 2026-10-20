@@ -121,3 +121,18 @@ def delivery_sla(*, ready_at_epoch: int, due_at_epoch: int,
     status = "DELIVERED_LATE" if delivered_at_epoch is not None and delay > 0 else "DELIVERED_ON_TIME" if delivered_at_epoch is not None else "READY"
     return {"status": status, "delivery_window_seconds": due_at_epoch - ready_at_epoch,
             "delay_seconds": max(0, delay), "delivered": delivered_at_epoch is not None}
+
+
+def release_handoff(release: DataRelease, *, owner: str, consumer: str,
+                    evidence_links: list[str]) -> dict[str, Any]:
+    """Create a minimal handoff checklist for an offline release."""
+    if not owner.strip() or not consumer.strip():
+        raise ValueError("owner and consumer are required")
+    evidence = sorted({item.strip() for item in evidence_links if item.strip()})
+    blockers = [] if release.status == "READY" else ["quality gate is not ready"]
+    if not evidence:
+        blockers.append("delivery evidence is missing")
+    return {"release_id": release.release_id, "owner": owner.strip(),
+            "consumer": consumer.strip(), "evidence_links": evidence,
+            "checklist": ["核对发布清单", "确认消费方读取范围", "登记交付结果"],
+            "blockers": blockers, "handoff_status": "READY" if not blockers else "BLOCKED"}

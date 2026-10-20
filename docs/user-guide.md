@@ -166,3 +166,5 @@ inspect-compaction-journal build/compaction/journal.json --require-complete
 使用 `recovery_drill` 对恢复点做只读演练。只有恢复点可执行、分区完全一致且来源指纹核对通过时结果才为 `PASS`，否则列出缺失或意外分区供复核。
 
 使用 `delivery_sla` 记录发布就绪、约定截止和实际交付时间。结果区分待交付、按时交付和延迟交付，并给出延迟秒数，便于离线批次复盘。
+
+使用 `release_handoff` 生成数据负责人、消费方、证据链接和固定交接步骤。质量未就绪或没有交付证据时状态为 `BLOCKED`，补齐阻塞项后再确认交付。
