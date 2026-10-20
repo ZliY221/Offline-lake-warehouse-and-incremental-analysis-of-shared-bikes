@@ -23,6 +23,19 @@ class DataRelease:
         return asdict(self)
 
 
+@dataclass(frozen=True)
+class RestorePoint:
+    restore_id: str
+    release_id: str
+    dataset: str
+    partitions: tuple[str, ...]
+    source_fingerprint: str
+    executable: bool
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
 def build_release(*, dataset: str, partitions: list[str], row_count: int,
                   schema_version: str, source_fingerprint: str,
                   quality_passed: bool) -> DataRelease:
@@ -39,3 +52,10 @@ def build_release(*, dataset: str, partitions: list[str], row_count: int,
     return DataRelease(release_id, dataset, normalized, row_count, schema_version,
                        source_fingerprint, quality_passed,
                        "READY" if quality_passed else "BLOCKED")
+
+
+def build_restore_point(release: DataRelease) -> RestorePoint:
+    """Capture the immutable inputs needed to restore a published dataset."""
+    restore_id = "rst-" + sha256(f"{release.release_id}:{release.source_fingerprint}".encode()).hexdigest()[:12]
+    return RestorePoint(restore_id, release.release_id, release.dataset, release.partitions,
+                        release.source_fingerprint, release.status == "READY")

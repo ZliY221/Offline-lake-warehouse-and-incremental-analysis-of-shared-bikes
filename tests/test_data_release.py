@@ -1,6 +1,6 @@
 import unittest
 
-from bike_lakehouse.data_release import build_release
+from bike_lakehouse.data_release import build_release, build_restore_point
 
 
 class DataReleaseTests(unittest.TestCase):
@@ -17,4 +17,12 @@ class DataReleaseTests(unittest.TestCase):
                                 schema_version="3", source_fingerprint="abc",
                                 quality_passed=False)
         self.assertEqual("BLOCKED", release.status)
+
+    def test_restore_point_only_executes_for_ready_release(self):
+        release = build_release(dataset="trips", partitions=["d=1"], row_count=10,
+                                schema_version="3", source_fingerprint="abc",
+                                quality_passed=True)
+        point = build_restore_point(release)
+        self.assertTrue(point.executable)
+        self.assertEqual(release.release_id, point.release_id)
 

@@ -154,3 +154,5 @@ inspect-compaction-journal build/compaction/journal.json --require-complete
 ## 10. 数据产品发布
 
 使用 `build_release` 将数据集名称、交付分区、行数、Schema 版本和来源指纹固化为稳定发布编号。只有质量门禁通过的清单状态为 `READY`；`BLOCKED` 清单不得交付下游。相同内容重复生成会得到相同编号，可用于核对离线交付物。
+
+使用 `build_restore_point` 为已发布数据生成恢复点。恢复点保留原发布编号、分区与来源指纹；只有 `READY` 发布生成的恢复点可执行，避免从未通过质量门禁的候选数据回滚。
