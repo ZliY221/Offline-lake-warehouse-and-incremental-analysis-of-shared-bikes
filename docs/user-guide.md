@@ -164,3 +164,5 @@ inspect-compaction-journal build/compaction/journal.json --require-complete
 使用 `compare_releases` 比较相邻发布。结果列出新增和移除分区、行数变化及 Schema 是否变化；移除分区或修改 Schema 时必须复核后再交付。
 
 使用 `recovery_drill` 对恢复点做只读演练。只有恢复点可执行、分区完全一致且来源指纹核对通过时结果才为 `PASS`，否则列出缺失或意外分区供复核。
+
+使用 `delivery_sla` 记录发布就绪、约定截止和实际交付时间。结果区分待交付、按时交付和延迟交付，并给出延迟秒数，便于离线批次复盘。

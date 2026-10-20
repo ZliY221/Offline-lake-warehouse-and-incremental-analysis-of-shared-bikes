@@ -1,6 +1,6 @@
 import unittest
 
-from bike_lakehouse.data_release import build_release, build_restore_point, compare_releases, recovery_drill, release_audit, retention_decision
+from bike_lakehouse.data_release import build_release, build_restore_point, compare_releases, delivery_sla, recovery_drill, release_audit, retention_decision
 
 
 class DataReleaseTests(unittest.TestCase):
@@ -50,4 +50,9 @@ class DataReleaseTests(unittest.TestCase):
         result = recovery_drill(build_restore_point(release), restored_partitions=["d=1"], fingerprint_matches=True)
         self.assertEqual("REVIEW", result["status"])
         self.assertEqual(["d=2"], result["missing_partitions"])
+
+    def test_delivery_sla_reports_late_seconds(self):
+        result = delivery_sla(ready_at_epoch=100, due_at_epoch=200, delivered_at_epoch=230)
+        self.assertEqual("DELIVERED_LATE", result["status"])
+        self.assertEqual(30, result["delay_seconds"])
 

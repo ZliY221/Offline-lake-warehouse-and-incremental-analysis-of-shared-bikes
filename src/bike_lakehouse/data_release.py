@@ -109,3 +109,15 @@ def recovery_drill(point: RestorePoint, *, restored_partitions: list[str],
             "missing_partitions": missing, "unexpected_partitions": unexpected,
             "fingerprint_matches": fingerprint_matches,
             "status": "PASS" if passed else "REVIEW"}
+
+
+def delivery_sla(*, ready_at_epoch: int, due_at_epoch: int,
+                 delivered_at_epoch: int | None = None) -> dict[str, Any]:
+    """Track an offline release against its delivery deadline."""
+    if ready_at_epoch < 0 or due_at_epoch <= ready_at_epoch:
+        raise ValueError("due time must be later than ready time")
+    observed = delivered_at_epoch if delivered_at_epoch is not None else ready_at_epoch
+    delay = observed - due_at_epoch
+    status = "DELIVERED_LATE" if delivered_at_epoch is not None and delay > 0 else "DELIVERED_ON_TIME" if delivered_at_epoch is not None else "READY"
+    return {"status": status, "delivery_window_seconds": due_at_epoch - ready_at_epoch,
+            "delay_seconds": max(0, delay), "delivered": delivered_at_epoch is not None}
