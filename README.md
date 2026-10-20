@@ -150,4 +150,4 @@ tests/                  Python 与 Spark 验证
 
 ## 版本与维护
 
-当前版本为 `v3.4.0`。离线数据产品支持发布差异对比，能够识别分区增删、行数变化和 Schema 变更并触发复核。每次发布同步维护[用户使用指南](docs/user-guide.md)、[版本记录](CHANGELOG.md)和[版本摘要](VERSION_LOG.md)。
+当前版本为 `v3.5.0`。离线数据产品支持发布差异对比与恢复演练，恢复结果会核对完整分区和来源指纹。每次发布同步维护[用户使用指南](docs/user-guide.md)、[版本记录](CHANGELOG.md)和[版本摘要](VERSION_LOG.md)。

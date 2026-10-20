@@ -96,3 +96,16 @@ def compare_releases(previous: DataRelease, current: DataRelease) -> dict[str, A
             "removed_partitions": removed, "row_count_delta": current.row_count - previous.row_count,
             "schema_changed": previous.schema_version != current.schema_version,
             "requires_review": bool(removed or previous.schema_version != current.schema_version)}
+
+
+def recovery_drill(point: RestorePoint, *, restored_partitions: list[str],
+                   fingerprint_matches: bool) -> dict[str, Any]:
+    """Evaluate a restore rehearsal without changing the published dataset."""
+    restored = tuple(sorted(set(restored_partitions)))
+    missing = sorted(set(point.partitions) - set(restored))
+    unexpected = sorted(set(restored) - set(point.partitions))
+    passed = point.executable and fingerprint_matches and not missing and not unexpected
+    return {"restore_id": point.restore_id, "passed": passed,
+            "missing_partitions": missing, "unexpected_partitions": unexpected,
+            "fingerprint_matches": fingerprint_matches,
+            "status": "PASS" if passed else "REVIEW"}

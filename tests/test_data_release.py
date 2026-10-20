@@ -1,6 +1,6 @@
 import unittest
 
-from bike_lakehouse.data_release import build_release, build_restore_point, compare_releases, release_audit, retention_decision
+from bike_lakehouse.data_release import build_release, build_restore_point, compare_releases, recovery_drill, release_audit, retention_decision
 
 
 class DataReleaseTests(unittest.TestCase):
@@ -44,4 +44,10 @@ class DataReleaseTests(unittest.TestCase):
         diff = compare_releases(old, new)
         self.assertEqual(["d=3"], diff["added_partitions"])
         self.assertTrue(diff["requires_review"])
+
+    def test_recovery_drill_requires_all_partitions_and_fingerprint(self):
+        release = build_release(dataset="trips", partitions=["d=1", "d=2"], row_count=20, schema_version="3", source_fingerprint="a", quality_passed=True)
+        result = recovery_drill(build_restore_point(release), restored_partitions=["d=1"], fingerprint_matches=True)
+        self.assertEqual("REVIEW", result["status"])
+        self.assertEqual(["d=2"], result["missing_partitions"])
 

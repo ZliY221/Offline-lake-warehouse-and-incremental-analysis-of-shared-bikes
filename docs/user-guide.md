@@ -162,3 +162,5 @@ inspect-compaction-journal build/compaction/journal.json --require-complete
 使用 `release_audit` 汇总发布组合。结果包含就绪与阻断数量、覆盖数据集和重复发布编号；存在阻断版本或编号重复时状态为 `REVIEW`，交付前应先核对来源和质量证据。
 
 使用 `compare_releases` 比较相邻发布。结果列出新增和移除分区、行数变化及 Schema 是否变化；移除分区或修改 Schema 时必须复核后再交付。
+
+使用 `recovery_drill` 对恢复点做只读演练。只有恢复点可执行、分区完全一致且来源指纹核对通过时结果才为 `PASS`，否则列出缺失或意外分区供复核。
