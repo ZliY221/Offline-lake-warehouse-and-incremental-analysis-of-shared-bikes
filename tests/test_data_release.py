@@ -1,6 +1,6 @@
 import unittest
 
-from bike_lakehouse.data_release import build_release, build_restore_point, compare_releases, delivery_sla, recovery_drill, release_audit, release_handoff, retention_decision
+from bike_lakehouse.data_release import ConsumerContract, build_release, build_restore_point, compare_releases, consumer_contract_readiness, delivery_sla, recovery_drill, release_audit, release_handoff, retention_decision
 
 
 class DataReleaseTests(unittest.TestCase):
@@ -61,4 +61,21 @@ class DataReleaseTests(unittest.TestCase):
         result = release_handoff(release, owner="data-team", consumer="reporting", evidence_links=[])
         self.assertEqual("BLOCKED", result["handoff_status"])
         self.assertIn("delivery evidence is missing", result["blockers"])
+
+    def test_consumer_contracts_explain_each_blocker(self):
+        release = build_release(dataset="trips_gold", partitions=["d=1"], row_count=10,
+                                schema_version="4", source_fingerprint="a", quality_passed=True)
+        contracts = [
+            ConsumerContract("reporting", ("trip_date", "trip_count"), 30, 8),
+            ConsumerContract("finance", ("trip_date", "revenue"), 90, 2),
+        ]
+        result = consumer_contract_readiness(
+            release, contracts, available_columns=["trip_date", "trip_count"],
+            history_days=45, delivery_delay_hours=4,
+        )
+        self.assertEqual("BLOCKED", result["portfolio_status"])
+        self.assertEqual(1, result["ready_count"])
+        finance = next(item for item in result["items"] if item["consumer"] == "finance")
+        self.assertEqual(["revenue"], finance["missing_columns"])
+        self.assertEqual(3, len(finance["blockers"]))
 

@@ -36,6 +36,22 @@ class RestorePoint:
         return asdict(self)
 
 
+@dataclass(frozen=True)
+class ConsumerContract:
+    """A downstream consumer's minimum usable-data contract."""
+
+    consumer: str
+    required_columns: tuple[str, ...]
+    minimum_history_days: int
+    maximum_delivery_delay_hours: int
+
+    def __post_init__(self) -> None:
+        if not self.consumer.strip() or not self.required_columns:
+            raise ValueError("consumer and required_columns are required")
+        if self.minimum_history_days < 1 or self.maximum_delivery_delay_hours < 0:
+            raise ValueError("consumer contract thresholds are invalid")
+
+
 def build_release(*, dataset: str, partitions: list[str], row_count: int,
                   schema_version: str, source_fingerprint: str,
                   quality_passed: bool) -> DataRelease:
@@ -136,3 +152,46 @@ def release_handoff(release: DataRelease, *, owner: str, consumer: str,
             "consumer": consumer.strip(), "evidence_links": evidence,
             "checklist": ["核对发布清单", "确认消费方读取范围", "登记交付结果"],
             "blockers": blockers, "handoff_status": "READY" if not blockers else "BLOCKED"}
+
+
+def consumer_contract_readiness(
+    release: DataRelease,
+    contracts: list[ConsumerContract],
+    *,
+    available_columns: list[str],
+    history_days: int,
+    delivery_delay_hours: int,
+) -> dict[str, Any]:
+    """Evaluate one release against each downstream consumer's actual needs."""
+    if history_days < 0 or delivery_delay_hours < 0:
+        raise ValueError("history and delivery delay cannot be negative")
+    columns = {item.strip() for item in available_columns if item.strip()}
+    items: list[dict[str, Any]] = []
+    for contract in sorted(contracts, key=lambda item: item.consumer):
+        missing = sorted(set(contract.required_columns) - columns)
+        blockers: list[str] = []
+        if release.status != "READY":
+            blockers.append("release quality gate is not ready")
+        if missing:
+            blockers.append("required columns are missing")
+        if history_days < contract.minimum_history_days:
+            blockers.append("available history is shorter than required")
+        if delivery_delay_hours > contract.maximum_delivery_delay_hours:
+            blockers.append("delivery delay exceeds consumer contract")
+        items.append({
+            "consumer": contract.consumer,
+            "status": "READY" if not blockers else "BLOCKED",
+            "missing_columns": missing,
+            "blockers": blockers,
+            "minimum_history_days": contract.minimum_history_days,
+            "maximum_delivery_delay_hours": contract.maximum_delivery_delay_hours,
+        })
+    blocked = sum(item["status"] == "BLOCKED" for item in items)
+    return {
+        "release_id": release.release_id,
+        "consumer_count": len(items),
+        "ready_count": len(items) - blocked,
+        "blocked_count": blocked,
+        "portfolio_status": "READY" if items and blocked == 0 else "BLOCKED",
+        "items": items,
+    }
