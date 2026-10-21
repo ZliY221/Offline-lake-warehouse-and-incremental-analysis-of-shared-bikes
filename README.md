@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/ci.yml/badge.svg)](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/ci.yml)
 [![Portable smoke](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/portable-smoke.yml/badge.svg)](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/portable-smoke.yml)
-![Version](https://img.shields.io/badge/version-v3.10.0-2563eb)
+![Version](https://img.shields.io/badge/version-v4.0.0-2563eb)
 ![PySpark](https://img.shields.io/badge/PySpark-4.2-e25a1c)
 ![Storage](https://img.shields.io/badge/storage-Parquet-2563eb)
 
@@ -150,4 +150,4 @@ tests/                  Python 与 Spark 验证
 
 ## 版本与维护
 
-当前版本为 `v3.10.0`。离线数据产品新增分区保留与合规处置计划，在执行任何生命周期动作前识别归档候选、隐私复核与法务保留分区。每次发布同步维护[用户使用指南](docs/user-guide.md)、[版本记录](CHANGELOG.md)和[版本摘要](VERSION_LOG.md)。
+当前版本为 `v4.0.0`。离线数据产品升级为多数据集发布组合编排，联合依赖关系、质量与消费方门禁、业务优先级和总计算预算生成安全发布序列。每次发布同步维护[用户使用指南](docs/user-guide.md)、[版本记录](CHANGELOG.md)和[版本摘要](VERSION_LOG.md)。
