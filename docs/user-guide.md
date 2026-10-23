@@ -1,6 +1,6 @@
 # 用户使用指南
 
-适用版本：`v4.2.0`
+适用版本：`v4.3.0`
 
 本指南随项目版本同步更新，覆盖当前版本的启动、增量处理、质量治理和恢复操作。首次使用建议先阅读仓库首页的项目简介、数据架构和常用入口，再按本指南选择运行模式。
 
@@ -186,3 +186,7 @@ v3.10.0 可使用 `plan_partition_retention` 对离线分区生成保留计划�
 ## 13. v4.2.0 质量取证抽样
 
 使用 `PartitionEvidenceCandidate` 登记分区名称、行数、质量风险分数和新鲜度小时数，再调用 `plan_quality_evidence_samples` 并设置总样本预算与每个非空分区的最低样本数。计划先保证分区覆盖，再按规模、风险和新鲜度分配剩余预算，逐分区返回 `sample_count` 与稳定哈希选择规则。`source_rows_read=false`、`sampling_started=false` 表示该步骤仅规划审计证据，不会读取或修改源数据；审核通过后可由下游抽样作业按同一稳定主键规则执行。
+
+## 14. v4.3.0 质量规则覆盖地图
+
+使用 `DatasetQualityCoverage` 登记数据集的关键字段、已有校验字段、新鲜度 SLA 和血缘登记状态，再调用 `assess_quality_coverage`。结果逐数据集返回覆盖率、缺少校验的关键字段和治理缺口：关键字段未覆盖时为 `BLOCKED`，字段完整但 SLA 或血缘缺失时为 `REVIEW`，三类要求均满足时为 `READY`。`quality_rules_changed=false` 表示报告只用于安排治理工作，不会自动新增规则或修改数据。

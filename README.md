@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/ci.yml/badge.svg)](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/ci.yml)
 [![Portable smoke](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/portable-smoke.yml/badge.svg)](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/portable-smoke.yml)
-![Version](https://img.shields.io/badge/version-v4.2.0-2563eb)
+![Version](https://img.shields.io/badge/version-v4.3.0-2563eb)
 ![PySpark](https://img.shields.io/badge/PySpark-4.2-e25a1c)
 ![Storage](https://img.shields.io/badge/storage-Parquet-2563eb)
 
@@ -150,4 +150,4 @@ tests/                  Python 与 Spark 验证
 
 ## 版本与维护
 
-当前版本为 `v4.2.0`。离线数据产品新增分层质量取证抽样，在固定预算内兼顾分区覆盖、质量风险和数据新鲜度，生成可复现的只读抽样计划。每次发布同步维护[用户使用指南](docs/user-guide.md)、[版本记录](CHANGELOG.md)和[版本摘要](VERSION_LOG.md)。
+当前版本为 `v4.3.0`。离线数据产品新增质量规则覆盖地图，按数据集识别关键字段校验、新鲜度 SLA 和血缘登记缺口，避免仅凭单次质量通过判断长期保障能力。每次发布同步维护[用户使用指南](docs/user-guide.md)、[版本记录](CHANGELOG.md)和[版本摘要](VERSION_LOG.md)。
