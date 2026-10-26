@@ -1,6 +1,6 @@
 # 用户使用指南
 
-适用版本：`v4.6.0`
+适用版本：`v4.7.0`
 
 本指南随项目版本同步更新，覆盖当前版本的启动、增量处理、质量治理和恢复操作。首次使用建议先阅读仓库首页的项目简介、数据架构和常用入口，再按本指南选择运行模式。
 
@@ -209,3 +209,13 @@ rehearse-operator-journeys --output build/usability/operator-journeys.json
 运行 `build-operator-workspace`，系统会重新执行标准 100 条旅程演练，并生成 `build/usability/operator-workspace.json` 与 `operator-workspace.html`。默认焦点区只展示 12 条任务，先显示环境和来源阻断，再显示失败恢复、质量复核与交付登记。每条任务包含 `estimated_minutes`、`resume_key`、操作步骤和 `safe_to_start`，便于中断后继续处理。
 
 使用 `--visible-limit 1-25` 可以调整当班人员一次看到的任务数量。HTML 文件可直接在浏览器打开，不依赖外部服务。页面和 JSON 都是只读计划，`execution_started=false` 表示不会自动启动 Spark 任务、修复或发布。
+
+## 18. v4.7.0 来源分区就绪评估
+
+准备一个 JSON 数组，每项包含 `partition`、`expected_rows`、`observed_rows`、`upstream_complete`、`contract_valid`、`checksum_available` 和 `late_by_minutes`，然后执行：
+
+```powershell
+assess-partition-readiness --input config/partition-readiness.json --output build/readiness/partitions.json
+```
+
+行数完整度、契约、校验和或上游完成状态不满足要求时返回 `BLOCKED`；仅超过允许到达延迟时返回 `AT_RISK`；全部满足时返回 `READY`。可通过 `--minimum-completeness` 和 `--maximum-lateness-minutes` 调整阈值。报告中的 `incremental_load_started=false` 表示评估不会自动启动增量装载。
