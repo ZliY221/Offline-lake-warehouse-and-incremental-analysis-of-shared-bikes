@@ -1,6 +1,6 @@
 # 用户使用指南
 
-适用版本：`v4.7.0`
+适用版本：`v4.8.0`
 
 本指南随项目版本同步更新，覆盖当前版本的启动、增量处理、质量治理和恢复操作。首次使用建议先阅读仓库首页的项目简介、数据架构和常用入口，再按本指南选择运行模式。
 
@@ -219,3 +219,13 @@ assess-partition-readiness --input config/partition-readiness.json --output buil
 ```
 
 行数完整度、契约、校验和或上游完成状态不满足要求时返回 `BLOCKED`；仅超过允许到达延迟时返回 `AT_RISK`；全部满足时返回 `READY`。可通过 `--minimum-completeness` 和 `--maximum-lateness-minutes` 调整阈值。报告中的 `incremental_load_started=false` 表示评估不会自动启动增量装载。
+
+## 19. v4.8.0 增量装载窗口排程
+
+将分区名称、就绪状态、预计耗时、截止分钟和优先级写入 JSON 数组，然后执行：
+
+```powershell
+plan-incremental-load-windows --input config/load-candidates.json --parallel-slots 2 --window-minutes 120
+```
+
+系统先安排 `READY` 分区，再安排需要确认的 `AT_RISK` 分区；`BLOCKED` 分区直接延期。每项计划包含执行槽位、开始与完成分钟、截止余量及 `PLANNED` 或 `DEADLINE_RISK` 状态。超出总窗口的任务返回 `WINDOW_CAPACITY_EXCEEDED`。`incremental_load_started=false` 表示排程不会自动启动作业。

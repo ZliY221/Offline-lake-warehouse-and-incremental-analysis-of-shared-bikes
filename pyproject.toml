@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bike-trip-lakehouse"
-version = "4.7.0"
+version = "4.8.0"
 description = "A reproducible PySpark batch lakehouse project"
 requires-python = ">=3.10"
 dependencies = [
@@ -20,6 +20,7 @@ plan-trip-backfill = "bike_lakehouse.backfill_plan_cli:main"
 rehearse-operator-journeys = "bike_lakehouse.operator_journey_cli:main"
 build-operator-workspace = "bike_lakehouse.operator_workspace_cli:main"
 assess-partition-readiness = "bike_lakehouse.partition_readiness_cli:main"
+plan-incremental-load-windows = "bike_lakehouse.incremental_window_cli:main"
 
 [tool.ruff]
 line-length = 100
