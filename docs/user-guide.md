@@ -1,6 +1,6 @@
 # 用户使用指南
 
-适用版本：`v4.5.0`
+适用版本：`v4.6.0`
 
 本指南随项目版本同步更新，覆盖当前版本的启动、增量处理、质量治理和恢复操作。首次使用建议先阅读仓库首页的项目简介、数据架构和常用入口，再按本指南选择运行模式。
 
@@ -204,3 +204,8 @@ rehearse-operator-journeys --output build/usability/operator-journeys.json
 ```
 
 命令固定模拟 100 次常见使用过程，覆盖首次运行环境缺失、来源分区问题、流水线失败恢复、质量门禁失败、发布证据不完整和正常交付。报告中每条旅程均包含 `primary_action`、三步 `steps`、中文 `guidance` 和 `requires_confirmation`，用户可直接按首要动作进入正确入口。汇总字段 `action_counts` 用于发现最常见的操作阻塞，`unresolved_count` 应为 0。该演练不会自动恢复任务、修改数据或执行发布。
+## 17. v4.6.0 离线运行焦点队列
+
+运行 `build-operator-workspace`，系统会重新执行标准 100 条旅程演练，并生成 `build/usability/operator-workspace.json` 与 `operator-workspace.html`。默认焦点区只展示 12 条任务，先显示环境和来源阻断，再显示失败恢复、质量复核与交付登记。每条任务包含 `estimated_minutes`、`resume_key`、操作步骤和 `safe_to_start`，便于中断后继续处理。
+
+使用 `--visible-limit 1-25` 可以调整当班人员一次看到的任务数量。HTML 文件可直接在浏览器打开，不依赖外部服务。页面和 JSON 都是只读计划，`execution_started=false` 表示不会自动启动 Spark 任务、修复或发布。
