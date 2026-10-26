@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bike-trip-lakehouse"
-version = "4.4.0"
+version = "4.5.0"
 description = "A reproducible PySpark batch lakehouse project"
 requires-python = ">=3.10"
 dependencies = [
@@ -17,6 +17,7 @@ build-quality-actions = "bike_lakehouse.quality_actions_cli:main"
 build-lakehouse-operations = "bike_lakehouse.operations_center_cli:main"
 build-lakehouse-history = "bike_lakehouse.operations_history_cli:main"
 plan-trip-backfill = "bike_lakehouse.backfill_plan_cli:main"
+rehearse-operator-journeys = "bike_lakehouse.operator_journey_cli:main"
 
 [tool.ruff]
 line-length = 100

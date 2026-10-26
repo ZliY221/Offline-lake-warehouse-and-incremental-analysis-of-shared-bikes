@@ -1,6 +1,6 @@
 # 用户使用指南
 
-适用版本：`v4.4.0`
+适用版本：`v4.5.0`
 
 本指南随项目版本同步更新，覆盖当前版本的启动、增量处理、质量治理和恢复操作。首次使用建议先阅读仓库首页的项目简介、数据架构和常用入口，再按本指南选择运行模式。
 
@@ -194,3 +194,13 @@ v3.10.0 可使用 `plan_partition_retention` 对离线分区生成保留计划�
 ## 15. v4.4.0 临时质量豁免治理
 
 使用 `QualityException` 登记豁免编号、数据集、检查项、负责人、原因、剩余有效天数和影响分区数，再调用 `review_quality_exceptions`。已过期豁免返回 `EXPIRED`，进入临期窗口或超过允许分区范围时返回 `REVIEW`，其余为 `ACTIVE`。组合状态 `ACTION_REQUIRED` 表示至少一项需要处理；`quality_enforcement_changed=false` 表示复核不会自动续期、关闭豁免或更改质量门禁。
+
+## 16. v4.5.0 运维旅程演练
+
+在仓库根目录执行：
+
+```powershell
+rehearse-operator-journeys --output build/usability/operator-journeys.json
+```
+
+命令固定模拟 100 次常见使用过程，覆盖首次运行环境缺失、来源分区问题、流水线失败恢复、质量门禁失败、发布证据不完整和正常交付。报告中每条旅程均包含 `primary_action`、三步 `steps`、中文 `guidance` 和 `requires_confirmation`，用户可直接按首要动作进入正确入口。汇总字段 `action_counts` 用于发现最常见的操作阻塞，`unresolved_count` 应为 0。该演练不会自动恢复任务、修改数据或执行发布。
