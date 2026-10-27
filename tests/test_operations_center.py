@@ -59,8 +59,17 @@ class OperationsCenterTests(unittest.TestCase):
 
         self.assertIn('class="skip" href="#content"', html)
         self.assertIn("OFFLINE LAKEHOUSE · BATCH DESK", html)
-        self.assertIn('class="workspace"', html)
+        self.assertIn('class="workspace page-view"', html)
         self.assertIn("@media(max-width:680px)", html)
+
+    def test_report_exposes_four_distinct_operation_pages(self) -> None:
+        html = render_operations_html(build_operations_snapshot(quality(), orchestration()))
+
+        for page in ("overview", "pipeline", "datasets", "quality"):
+            self.assertIn(f'data-screen-link="{page}"', html)
+            self.assertIn(f'data-page="{page}"', html)
+        self.assertIn("function openScreen(screen)", html)
+        self.assertIn('body[data-screen="quality"]', html)
 
     def test_bundle_writes_json_and_standalone_html(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
