@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/ci.yml/badge.svg)](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/ci.yml)
 [![Portable smoke](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/portable-smoke.yml/badge.svg)](https://github.com/ZliY221/Offline-lake-warehouse-and-incremental-analysis-of-shared-bikes/actions/workflows/portable-smoke.yml)
-![Version](https://img.shields.io/badge/version-v4.9.0-2563eb)
+![Version](https://img.shields.io/badge/version-v4.10.0-2563eb)
 ![PySpark](https://img.shields.io/badge/PySpark-4.2-e25a1c)
 ![Storage](https://img.shields.io/badge/storage-Parquet-2563eb)
 
@@ -150,4 +150,4 @@ tests/                  Python 与 Spark 验证
 
 ## 版本与维护
 
-当前版本为 `v4.9.0`。离线数据产品将批次工作台重构为运行总览、任务链路、数据资产和质量处置四个独立页面，并以不同背景强化当前操作场景；报告仍可完全离线打开。每次发布同步维护[用户使用指南](docs/user-guide.md)、[版本记录](CHANGELOG.md)和[版本摘要](VERSION_LOG.md)。
+当前版本为 `v4.10.0`。离线工作台采用帧内批量切换、页面记忆和键盘连续导航，减少重排与重复定位；报告仍可完全离线打开。每次发布同步维护[用户使用指南](docs/user-guide.md)、[版本记录](CHANGELOG.md)和[版本摘要](VERSION_LOG.md)。

@@ -68,8 +68,11 @@ class OperationsCenterTests(unittest.TestCase):
         for page in ("overview", "pipeline", "datasets", "quality"):
             self.assertIn(f'data-screen-link="{page}"', html)
             self.assertIn(f'data-page="{page}"', html)
-        self.assertIn("function openScreen(screen)", html)
+        self.assertIn("function openScreen(screen,focus)", html)
         self.assertIn('body[data-screen="quality"]', html)
+        self.assertIn("localStorage.setItem('bike-lakehouse-screen'", html)
+        self.assertIn("requestAnimationFrame", html)
+        self.assertIn("ArrowDown", html)
 
     def test_bundle_writes_json_and_standalone_html(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
