@@ -1,6 +1,6 @@
 # 用户使用指南
 
-适用版本：`v4.10.0`
+适用版本：`v4.11.0`
 
 本指南随项目版本同步更新，覆盖当前版本的启动、增量处理、质量治理和恢复操作。首次使用建议先阅读仓库首页的项目简介、数据架构和常用入口，再按本指南选择运行模式。
 
@@ -241,3 +241,13 @@ plan-incremental-load-windows --input config/load-candidates.json --parallel-slo
 页面切换会在浏览器下一动画帧统一完成显隐、导航状态和提示更新，避免大型批次报告在连续切换时反复重排。浏览器会记住最近使用的工作区；未指定地址片段时，再次打开报告会回到该页面。
 
 导航获得焦点后，可使用上、下方向键移动，Home 跳到运行总览，End 跳到质量处置，Enter 打开页面。主动切换后焦点进入当前页面标题，屏幕阅读器会播报页面名称。上述状态只保存在当前浏览器，不修改批次快照或任何离线产物。
+
+## 22. v4.11.0 离线班次交接包
+
+准备 JSON 数组，每项填写 `item_id`、`lane`、`status`、`owner`、`updated_at`、`resume_key`、`next_action`、`estimated_minutes` 和是否需要确认。`lane` 支持 `ENVIRONMENT`、`SOURCE`、`PIPELINE`、`QUALITY`、`DELIVERY`，状态支持 `OPEN`、`IN_PROGRESS`、`BLOCKED`、`RESOLVED`。
+
+```powershell
+build-shift-handover --input config/handover-items.json --focus-limit 12 --stale-after-minutes 120
+```
+
+默认输出 `build/operations/shift-handover.json`。阻断事项优先，其次是进行中与待领取事项；同类事项优先展示超过陈旧阈值的记录。报告提供通道和责任人汇总、焦点预计耗时及剩余数量。`work_started=false` 表示生成交接包不会启动 Spark、恢复任务或改变任何数据。
